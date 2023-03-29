@@ -1,57 +1,110 @@
+use std::error::Error;
+
+use crate::op::Label;
 use crate::op::Op;
+use crate::op::RegisterValue;
 use crate::op::Value;
 
 pub fn parse(source: &str) -> impl Iterator<Item = Result<Op, ParseError>> + '_ {
-  source.lines().map(parse_line)
+  source
+    .lines()
+    .enumerate()
+    .map(|(i, l)| (i, l.trim()))
+    .filter(|(_, l)| !l.is_empty() && !l.starts_with('#'))
+    .map(|(i, l)| parse_line(l, i))
 }
 
-pub fn parse_line(line: &str) -> Result<Op, ParseError> {
+pub fn parse_line(line: &str, index: usize) -> Result<Op, ParseError> {
   let facts: Vec<_> = line.split_whitespace().collect();
-  let first = facts.first().ok_or(ParseError {})?.trim().to_uppercase();
+
+  if facts.len() > 2 && !facts[2].starts_with('#') {
+    Err(ParseError {})?
+  }
+
+  let first = facts.first().ok_or(ParseError {})?.trim();
+  let tail = facts.get(1);
 
   if let Some(label) = first.strip_suffix(':') {
     if is_valid_label(label) {
-      return Ok(Op::Label(label.to_string()));
+      return Ok(Op::Label(label.to_string(), index));
     }
-    return Err(ParseError {});
+    Err(ParseError {})?
   }
 
-  let opcode = first;
-  let arg = facts.get(1).ok_or(ParseError {})?;
-  let arg: Value = {
-    if let Some(tail) = arg.strip_prefix('=') {
-      Value::Direct(tail.parse().map_err(|_| ParseError {})?)
-    } else if let Some(tail) = arg.strip_prefix('*') {
-      Value::DoubleIndirect(tail.parse().map_err(|_| ParseError {})?)
-    } else if let Ok(arg) = arg.parse::<usize>() {
-      Value::Indirect(arg)
-    } else if is_valid_label(arg) {
-      Value::Label(arg.to_string())
-    } else {
-      Err(ParseError {})?
-    }
-  };
+  let opcode = first.to_uppercase();
 
   let op = match opcode.as_str() {
-    "LOAD" => Op::Load(arg),
-    "STORE" => Op::Store(arg),
-    "ADD" => Op::Add(arg),
-    "SUB" => Op::Sub(arg),
-    "MUL" => Op::Mul(arg),
-    "DIV" => Op::Div(arg),
-    "JUMP" => Op::Jump(arg),
-    "JUMPIFZERO" => Op::JumpIfZero(arg),
-    "JUMPIFNEG" => Op::JumpIfNeg(arg),
-    "INPUT" => Op::Input(arg),
-    "OUTPUT" => Op::Output(arg),
-    "HALT" => Op::Halt,
-    _ => return Err(ParseError {}),
+    "LOAD" | "ADD" | "SUB" | "MUL" | "DIV" | "WRITE" | "OUTPUT" => {
+      parse_with_value(&opcode, tail.ok_or(ParseError {})?, index)?
+    }
+    "JUMP" | "JMP" | "JZ" | "JZERO" | "JGZ" | "JGTZ" => {
+      parse_with_label(&opcode, tail.ok_or(ParseError {})?, index)?
+    }
+    "STORE" | "INPUT" | "READ" => parse_with_register(&opcode, tail.ok_or(ParseError {})?, index)?,
+    "HALT" => Op::Halt(index),
+    _ => Err(ParseError {})?,
   };
 
   Ok(op)
 }
 
-pub struct ParseError {}
+fn parse_with_register(head: &str, tail: &str, index: usize) -> Result<Op, ParseError> {
+  let arg: RegisterValue = {
+    if let Some(tail) = tail.strip_prefix('*') {
+      RegisterValue::Indirect(tail.parse().map_err(|_| ParseError {})?)
+    } else if let Ok(arg) = tail.parse::<usize>() {
+      RegisterValue::Direct(arg)
+    } else {
+      Err(ParseError {})?
+    }
+  };
+  match head {
+    "STORE" => Ok(Op::Store(arg, index)),
+    "INPUT" | "READ" => Ok(Op::Input(arg, index)),
+    _ => Err(ParseError {})?,
+  }
+}
+
+fn parse_with_value(head: &str, tail: &str, index: usize) -> Result<Op, ParseError> {
+  let arg: Value = {
+    if let Some(tail) = tail.strip_prefix('=') {
+      Value::Pure(tail.parse().map_err(|_| ParseError {})?)
+    } else if let Some(tail) = tail.strip_prefix('*') {
+      Value::Register(RegisterValue::Indirect(
+        tail.parse().map_err(|_| ParseError {})?,
+      ))
+    } else if let Ok(arg) = tail.parse::<usize>() {
+      Value::Register(RegisterValue::Direct(arg))
+    } else {
+      Err(ParseError {})?
+    }
+  };
+
+  match head {
+    "LOAD" => Ok(Op::Load(arg, index)),
+    "OUTPUT" | "WRITE" => Ok(Op::Output(arg, index)),
+    "ADD" => Ok(Op::Add(arg, index)),
+    "SUB" => Ok(Op::Sub(arg, index)),
+    "MUL" => Ok(Op::Mul(arg, index)),
+    "DIV" => Ok(Op::Div(arg, index)),
+    _ => Err(ParseError {})?,
+  }
+}
+
+fn parse_with_label(head: &str, tail: &str, index: usize) -> Result<Op, ParseError> {
+  let label: Label = if is_valid_label(tail) {
+    Label::new(tail.to_string())
+  } else {
+    Err(ParseError {})?
+  };
+
+  match head {
+    "JUMP" | "JMP" => Ok(Op::Jump(label, index)),
+    "JZ" | "JZERO" => Ok(Op::JumpIfZero(label, index)),
+    "JGZ" | "JGTZ" => Ok(Op::JumpGreatherZero(label, index)),
+    _ => Err(ParseError {})?,
+  }
+}
 
 fn is_valid_label(label: &str) -> bool {
   let Some(first) = label.chars().next() else { return false };
@@ -64,3 +117,14 @@ fn is_valid_label(label: &str) -> bool {
     .chars()
     .all(|c| c.is_ascii_alphanumeric() || c == '_' || c.is_ascii_digit())
 }
+
+#[derive(Debug)]
+pub struct ParseError {}
+
+impl std::fmt::Display for ParseError {
+  fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    write!(f, "Parse error")
+  }
+}
+
+impl Error for ParseError {}
