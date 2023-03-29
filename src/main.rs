@@ -65,7 +65,7 @@ jmp quit
 
 quit:
 
-halt;
+halt
 "#;
 
 fn main() -> Result<(), Box<dyn Error>> {
