@@ -31,14 +31,22 @@ impl Program {
   pub fn decode_label(&self, label: &Label) -> Option<usize> {
     self.labels.get(label.get()).copied()
   }
-  pub fn inject_instruction(&mut self, instruction: Op, index: usize) {
-    self.instructions.insert(index, instruction);
-    self.init_labels();
-  }
   pub fn inject_instructions(&mut self, instruction: Vec<Op>, index: usize) {
     let tail = self.instructions.split_off(index);
     self.instructions.extend(instruction);
     self.instructions.extend(tail);
+    self.init_labels();
+  }
+  pub fn remove_instructions(&mut self, indexes: Vec<usize>) {
+    let to_remove: Vec<Op> = self
+      .instructions
+      .iter()
+      .enumerate()
+      .filter(|(i, _)| indexes.contains(i))
+      .map(|(_, op)| op.clone())
+      .collect();
+
+    self.instructions.retain(|op| to_remove.contains(op));
     self.init_labels();
   }
 }

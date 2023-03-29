@@ -45,8 +45,7 @@ impl Ram {
     }
 
     let Some(stmt) = self.program.get(self.pc) else {
-      // SEGFAULT
-      return Err(InterpretError::SegmentFault(self.line));
+      return Err(InterpretError::SegmentationFault(self.line));
     };
 
     let mut should_increment = true;
@@ -60,7 +59,7 @@ impl Ram {
         let index: usize = self
           .get_with_register(&value.clone())?
           .try_into()
-          .map_err(|_| InterpretError::SegmentFault(self.line))?;
+          .map_err(|_| InterpretError::SegmentationFault(self.line))?;
         *self.registers.get_mut(index) = *self.first();
       }
       Op::Add(value, _) => *self.first_mut() += self.get_with_value(&value.clone())?,
@@ -109,11 +108,11 @@ impl Ram {
         let index: usize = self
           .get_with_register(&value.clone())?
           .try_into()
-          .map_err(|_| InterpretError::SegmentFault(self.line))?;
+          .map_err(|_| InterpretError::SegmentationFault(self.line))?;
         *self.registers.get_mut(index) = input
           .trim()
           .parse()
-          .map_err(|_| InterpretError::SegmentFault(self.line))?;
+          .map_err(|_| InterpretError::SegmentationFault(self.line))?;
       }
       Op::Halt(_) => self.halt = true,
     };
@@ -159,7 +158,7 @@ impl Ram {
     for _ in 0..N - 1 {
       index = (*self.registers.get_mut(index))
         .try_into()
-        .map_err(|_| InterpretError::SegmentFault(self.line))?
+        .map_err(|_| InterpretError::SegmentationFault(self.line))?
     }
     Ok(*self.registers.get_mut(index))
   }
@@ -167,7 +166,7 @@ impl Ram {
 
 #[derive(Debug)]
 pub enum InterpretError {
-  SegmentFault(usize),
+  SegmentationFault(usize),
   UnknownLabel(usize),
   InvalidInput(usize, String),
   InvalidLiteral(usize),
