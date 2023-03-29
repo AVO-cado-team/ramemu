@@ -1,30 +1,42 @@
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+use std::collections::HashMap;
+
+/// INVARIANT: Should have at least one element.
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct Registers<T> {
-  registers: Vec<T>,
+  registers: HashMap<usize, T>,
 }
 
 impl<T: Clone + Default> Registers<T> {
   pub(crate) fn get_mut(&mut self, index: usize) -> &mut T {
-    if index >= self.registers.len() {
-      self.registers.resize(index + 1, T::default());
-    }
-    &mut self.registers[index]
+    self.registers.entry(index).or_default()
   }
   pub fn first(&self) -> &T {
-    &self.registers[0]
+    self
+      .registers
+      .get(&0)
+      .expect("Registers: first element should be initialized on creation. Invariant is broken.")
   }
   pub fn first_mut(&mut self) -> &mut T {
-    &mut self.registers[0]
+    self.registers.entry(0).or_default()
   }
 }
 
 impl<T: Default> From<Vec<T>> for Registers<T> {
   fn from(registers: Vec<T>) -> Self {
-    let mut r = Registers { registers };
+    let mut r = Registers {
+      registers: registers.into_iter().enumerate().collect(),
+    };
     if r.registers.is_empty() {
-      r.registers.push(T::default());
+      r.registers.insert(0, T::default());
     }
     r
+  }
+}
+
+impl<T: Default> Default for Registers<T> {
+  fn default() -> Self {
+    vec![].into()
   }
 }
