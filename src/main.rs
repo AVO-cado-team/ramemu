@@ -19,16 +19,17 @@ fn main() -> Result<(), Box<dyn Error>> {
   // let program = Program::new(stmts);
 
   let mut ram = Ram::new(program);
-  let result: Result<(), InterpretError> = ram.try_for_each(|res| {
-    let res = res?;
-    let current_instruction = res.program.get(res.pc);
-    let registers = res.registers.clone();
+  let result: Vec<_> = ram.collect();
+  // let result: Result<(), InterpretError> = ram.try_for_each(|res| {
+  //   let res = res?;
+  //   let current_instruction = res.program.get(res.pc);
+  //   let registers = res.registers.clone();
 
-    println!("{:?}", current_instruction.clone());
-    println!("{:?}", registers);
+  //   println!("{:?}", current_instruction.clone());
+  //   println!("{:?}", registers);
 
-    Ok(())
-  });
-  println!("{:?}", result);
+  //   Ok(())
+  // });
+  println!("{:?}", result.last());
   Ok(())
 }
