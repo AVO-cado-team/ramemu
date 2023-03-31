@@ -190,3 +190,10 @@ impl std::fmt::Display for InterpretError {
 }
 
 impl std::error::Error for InterpretError {}
+
+impl Iterator for Ram {
+  type Item = Result<(), InterpretError>;
+  fn next(&mut self) -> Option<Self::Item> {
+    Some(self.step().map(|_| ()))
+  }
+}

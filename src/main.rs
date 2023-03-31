@@ -5,7 +5,7 @@ use ram::{
   // op::Op,
   // parser::{parse, ParseError},
   // program::Program,
-  ram::Ram,
+  ram::{InterpretError, Ram},
 };
 
 const SOURCE: &str = r#"
@@ -77,13 +77,11 @@ fn main() -> Result<(), Box<dyn Error>> {
   // let program = Program::new(stmts);
 
   let mut ram = Ram::new(program.clone());
-  ram.run()?;
-  /*
-  loop {
-    ram.step()?;
-    println!("{:?}", ram.get_current_instruction().unwrap());
-    println!("{:?}", ram.get_registers());
-  }
-  */
+  let r = ram.try_for_each(|res| -> Result<(), InterpretError> {
+    // println!("{:?}", ram.get_current_instruction().unwrap());
+    // println!("{:?}", ram.get_registers());
+    res
+  });
+  println!("{:?}", r);
   Ok(())
 }
