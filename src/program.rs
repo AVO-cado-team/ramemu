@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::stmt::{Label, Stmt};
 
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Program {
   pub instructions: Vec<Stmt>,
   pub labels: HashMap<String, usize>,

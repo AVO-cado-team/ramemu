@@ -8,6 +8,8 @@ pub mod program;
 pub mod ram;
 pub mod registers;
 
+// TODO: Serde feature
+
 pub fn create_program(source: &str) -> Result<Program, ParseError> {
   let stmts: Result<Vec<Stmt>, ParseError> = parser::parse(source).collect();
   let stmts = stmts?;

@@ -8,65 +8,7 @@ use ram::{
   ram::{InterpretError, Ram},
 };
 
-const SOURCE: &str = r#"
-load =0
-
-read  0
-store 1 # nmber
-
-
-# IF 1 or 2 or 3
-sub =1
-jz quit_1
-load 1
-sub =2
-jz quit_1
-load 1
-sub =3
-jz quit_1
-#
-
-load 1
-div  =2
-store 2 # num / 2
-load =2
-store 3 # num to div
-
-
-load 1
-div =2
-mul =2
-sub 1
-jz quit_2
-
-loop_1:
-	load  1
-	div   3
-	mul   3
-	sub   1
-	jz quit_2
-	load  3
-	sub   2
-	jz quit_1
-	load  3
-	add  =1
-	store 3
-	jmp loop_1
-
-
-
-quit_1:
-write =1
-jmp quit
-
-quit_2:
-write =0
-jmp quit
-
-quit:
-
-halt
-"#;
+const SOURCE: &str = include_str!("program.txt");
 
 fn main() -> Result<(), Box<dyn Error>> {
   let program = create_program(SOURCE)?;
@@ -76,12 +18,17 @@ fn main() -> Result<(), Box<dyn Error>> {
   // println!("{:?}", stmts);
   // let program = Program::new(stmts);
 
-  let mut ram = Ram::new(program.clone());
-  let r = ram.try_for_each(|res| -> Result<(), InterpretError> {
-    // println!("{:?}", ram.get_current_instruction().unwrap());
-    // println!("{:?}", ram.get_registers());
-    res
+  let mut ram = Ram::new(program);
+  let result: Result<(), InterpretError> = ram.try_for_each(|res| {
+    let res = res?;
+    let current_instruction = res.program.get(res.pc);
+    let registers = res.registers.clone();
+
+    println!("{:?}", current_instruction.clone());
+    println!("{:?}", registers);
+
+    Ok(())
   });
-  println!("{:?}", r);
+  println!("{:?}", result);
   Ok(())
 }

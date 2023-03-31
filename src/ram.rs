@@ -1,8 +1,8 @@
+use crate::program::Program;
+use crate::registers::Registers;
 use crate::stmt::RegisterValue;
 use crate::stmt::Stmt;
 use crate::stmt::Value;
-use crate::program::Program;
-use crate::registers::Registers;
 
 #[derive(Debug, Clone)]
 pub struct Ram {
@@ -62,7 +62,7 @@ impl Ram {
           .get_with_register(&value.clone())?
           .try_into()
           .map_err(|_| InterpretError::SegmentationFault(self.line))?;
-        *self.registers.get_mut(index) = self.first();
+        self.registers.set(index, self.first());
       }
       Stmt::Add(value, _) => self.set_first(self.first() + self.get_with_value(value)?),
       Stmt::Sub(value, _) => self.set_first(self.first() - self.get_with_value(value)?),
@@ -112,10 +112,13 @@ impl Ram {
           .get_with_register(&value.clone())?
           .try_into()
           .map_err(|_| InterpretError::SegmentationFault(self.line))?;
-        *self.registers.get_mut(index) = input
-          .trim()
-          .parse()
-          .map_err(|_| InterpretError::SegmentationFault(self.line))?;
+        self.registers.set(
+          index,
+          input
+            .trim()
+            .parse()
+            .map_err(|_| InterpretError::SegmentationFault(self.line))?,
+        );
       }
       Stmt::Halt(_) => self.halt = true,
     };
@@ -146,12 +149,12 @@ impl Ram {
 
   #[inline]
   fn set_first(&mut self, value: i64) {
-    *self.registers.first_mut() = value;
+    self.registers.set(0, value);
   }
 
   #[inline]
   fn first(&self) -> i64 {
-    self.registers.first()
+    self.registers.get(0)
   }
 
   fn get<const N: usize>(&self, index: usize) -> Result<i64, InterpretError> {
@@ -192,8 +195,47 @@ impl std::fmt::Display for InterpretError {
 impl std::error::Error for InterpretError {}
 
 impl Iterator for Ram {
-  type Item = Result<(), InterpretError>;
+  type Item = Result<RamState, InterpretError>;
   fn next(&mut self) -> Option<Self::Item> {
-    Some(self.step().map(|_| ()))
+    let out = self.step().map(|_| RamState::from(&*self));
+    if self.halt {
+      None
+    } else {
+      Some(out)
+    }
   }
 }
+
+#[derive(Default, Debug, Clone)]
+pub struct RamState {
+  pub program: Program,
+  pub registers: Registers<i64>,
+  pub pc: usize,
+  pub line: usize,
+  pub halt: bool,
+}
+
+impl From<&Ram> for RamState {
+  fn from(ram: &Ram) -> Self {
+    Self {
+      program: ram.program.clone(),
+      registers: ram.registers.clone(),
+      pc: ram.pc,
+      line: ram.line,
+      halt: ram.halt,
+    }
+  }
+}
+
+impl From<RamState> for Ram {
+  fn from(state: RamState) -> Self {
+    Self {
+      program: state.program,
+      registers: state.registers,
+      pc: state.pc,
+      line: state.line,
+      halt: state.halt,
+    }
+  }
+}
+

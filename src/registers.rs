@@ -1,7 +1,8 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::fmt::Debug;
 
-#[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[derive(Default, Clone, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct Registers<T> {
   registers: RefCell<HashMap<usize, T>>,
@@ -14,16 +15,18 @@ impl<T: Clone + Default> Registers<T> {
     map.entry(index).or_default().clone()
   }
   #[inline]
-  pub(crate) fn get_mut(&mut self, index: usize) -> &mut T {
-    self.registers.get_mut().entry(index).or_default()
+  pub(crate) fn set(&mut self, index: usize, value: T) {
+    self.registers.get_mut().insert(index, value);
   }
-  #[inline]
-  pub fn first(&self) -> T {
-    self.get(0)
-  }
-  #[inline]
-  pub fn first_mut(&mut self) -> &mut T {
-    self.get_mut(0)
+}
+
+impl<T: Clone + Default + Debug> Debug for Registers<T> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    let max_index = *self.registers.borrow().keys().max().unwrap_or(&0);
+    let vec: Vec<T> = (0..=max_index)
+      .map(|i| self.registers.borrow().get(&i).cloned().unwrap_or_else(Default::default))
+      .collect();
+    Debug::fmt(&vec, f)
   }
 }
 
@@ -32,6 +35,15 @@ impl<T> FromIterator<T> for Registers<T> {
   fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
     Registers {
       registers: RefCell::new(iter.into_iter().enumerate().map(|(i, v)| (i, v)).collect()),
+    }
+  }
+}
+
+impl<T> FromIterator<(usize, T)> for Registers<T> {
+  #[inline]
+  fn from_iter<I: IntoIterator<Item = (usize, T)>>(iter: I) -> Self {
+    Registers {
+      registers: RefCell::new(iter.into_iter().collect()),
     }
   }
 }
