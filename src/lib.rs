@@ -1,12 +1,12 @@
-use stmt::Stmt;
 use parser::ParseError;
 use program::Program;
+use stmt::Stmt;
 
-pub mod stmt;
 pub mod parser;
 pub mod program;
 pub mod ram;
 pub mod registers;
+pub mod stmt;
 
 // TODO: Serde feature
 
