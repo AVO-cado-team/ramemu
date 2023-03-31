@@ -24,7 +24,7 @@ impl<T: Clone + Default + Debug> Debug for Registers<T> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     let max_index = *self.registers.borrow().keys().max().unwrap_or(&0);
     let vec: Vec<T> = (0..=max_index)
-      .map(|i| self.registers.borrow().get(&i).cloned().unwrap_or_else(Default::default))
+      .map(|i| self.registers.borrow().get(&i).cloned().unwrap_or_default())
       .collect();
     Debug::fmt(&vec, f)
   }
