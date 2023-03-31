@@ -8,7 +8,7 @@ use ram::{
   ram::{InterpretError, Ram},
 };
 
-const SOURCE: &str = include_str!("program.txt");
+const SOURCE: &str = include_str!("../program.txt");
 
 fn main() -> Result<(), Box<dyn Error>> {
   let program = create_program(SOURCE)?;

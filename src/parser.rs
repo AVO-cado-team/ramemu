@@ -10,28 +10,37 @@ pub fn parse(source: &str) -> impl Iterator<Item = Result<Stmt, ParseError>> + '
     .lines()
     .enumerate()
     .map(|(i, l)| (i, l.trim()))
-    .filter(|(_, l)| !l.is_empty() && !l.starts_with('#'))
     .map(|(i, l)| parse_line(l, i))
+    .filter_map(|result| result.transpose())
 }
 
-pub fn parse_line(line: &str, index: usize) -> Result<Stmt, ParseError> {
-  let facts: Vec<_> = line.split_whitespace().collect();
+pub fn parse_line(line: &str, index: usize) -> Result<Option<Stmt>, ParseError> {
+  let facts: Vec<_> = line
+    .split('#')
+    .next()
+    .unwrap_or("")
+    .split_whitespace()
+    .collect();
 
-  if facts.len() > 2 && !facts[2].starts_with('#') {
+  if facts.len() > 2 {
     Err(ParseError {})?
   }
 
-  let first = facts.first().ok_or(ParseError {})?.trim();
+  if facts.is_empty() {
+    return Ok(None);
+  }
+
+  let head = facts[0].trim();
   let tail = facts.get(1);
 
-  if let Some(label) = first.strip_suffix(':') {
+  if let Some(label) = head.strip_suffix(':') {
     if is_valid_label(label) {
-      return Ok(Stmt::Label(label.to_string(), index));
+      return Ok(Some(Stmt::Label(label.to_string(), index)));
     }
     Err(ParseError {})?
   }
 
-  let opcode = first.to_uppercase();
+  let opcode = head.to_uppercase();
 
   let stmt = match opcode.as_str() {
     "LOAD" | "ADD" | "SUB" | "MUL" | "DIV" | "WRITE" | "OUTPUT" => {
@@ -45,7 +54,7 @@ pub fn parse_line(line: &str, index: usize) -> Result<Stmt, ParseError> {
     _ => Err(ParseError {})?,
   };
 
-  Ok(stmt)
+  Ok(Some(stmt))
 }
 
 fn parse_with_register(head: &str, tail: &str, index: usize) -> Result<Stmt, ParseError> {
