@@ -11,6 +11,7 @@ pub struct Ram {
   pc: usize,
   line: usize,
   halt: bool,
+  error: Option<InterpretError>,
 }
 
 impl Ram {
@@ -21,6 +22,7 @@ impl Ram {
       pc: 0,
       line: 0,
       halt: false,
+      error: None,
     }
   }
 
@@ -42,6 +44,18 @@ impl Ram {
   }
 
   pub fn step(&mut self) -> Result<(), InterpretError> {
+    let result = self.step_internal();
+    if result.is_err() {
+      self.halt = true;
+    }
+    result
+  }
+
+  pub fn get_error(&self) -> Option<InterpretError> {
+    self.error.clone()
+  }
+
+  fn step_internal(&mut self) -> Result<(), InterpretError> {
     if self.halt {
       return Err(InterpretError::Halted(self.line));
     }
@@ -176,7 +190,7 @@ impl Ram {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum InterpretError {
   SegmentationFault(usize),
   UnknownLabel(usize),
@@ -197,12 +211,10 @@ impl std::error::Error for InterpretError {}
 impl Iterator for Ram {
   type Item = Result<RamState, InterpretError>;
   fn next(&mut self) -> Option<Self::Item> {
-    let out = self.step().map(|_| RamState::from(&*self));
     if self.halt {
-      None
-    } else {
-      Some(out)
+      return None;
     }
+    Some(self.step().map(|_| RamState::from(&*self)))
   }
 }
 
@@ -213,6 +225,7 @@ pub struct RamState {
   pub pc: usize,
   pub line: usize,
   pub halt: bool,
+  pub error: Option<InterpretError>,
 }
 
 impl From<&Ram> for RamState {
@@ -223,6 +236,7 @@ impl From<&Ram> for RamState {
       pc: ram.pc,
       line: ram.line,
       halt: ram.halt,
+      error: ram.error.clone(),
     }
   }
 }
@@ -235,7 +249,7 @@ impl From<RamState> for Ram {
       pc: state.pc,
       line: state.line,
       halt: state.halt,
+      error: state.error,
     }
   }
 }
-
