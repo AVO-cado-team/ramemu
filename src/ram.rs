@@ -1,8 +1,8 @@
-use crate::op::Op;
-use crate::op::RegisterValue;
-use crate::op::Value;
 use crate::program::Program;
 use crate::registers::Registers;
+use crate::stmt::RegisterValue;
+use crate::stmt::Stmt;
+use crate::stmt::Value;
 
 #[derive(Debug, Clone)]
 pub struct Ram {
@@ -17,18 +17,20 @@ impl Ram {
   pub fn new(program: Program) -> Self {
     Ram {
       program,
-      registers: vec![0; 100].into(),
+      registers: [0; 100].into(),
       pc: 0,
       line: 0,
       halt: false,
     }
   }
 
+  #[inline]
   pub fn get_registers(&self) -> &Registers<i64> {
     &self.registers
   }
 
-  pub fn get_current_instruction(&self) -> Option<Op> {
+  #[inline]
+  pub fn get_current_instruction(&self) -> Option<Stmt> {
     self.program.get(self.pc).cloned()
   }
 
@@ -53,34 +55,35 @@ impl Ram {
     self.line = stmt.get_line();
 
     match stmt {
-      Op::Label(..) => {}
-      Op::Load(value, _) => *self.first_mut() = self.get_with_value(&value.clone())?,
-      Op::Store(value, _) => {
+      Stmt::Label(..) => {}
+      Stmt::Load(value, _) => self.set_first(self.get_with_value(value)?),
+      Stmt::Store(value, _) => {
         let index: usize = self
           .get_with_register(&value.clone())?
           .try_into()
           .map_err(|_| InterpretError::SegmentationFault(self.line))?;
-        *self.registers.get_mut(index) = *self.first();
+        self.registers.set(index, self.first());
       }
-      Op::Add(value, _) => *self.first_mut() += self.get_with_value(&value.clone())?,
-      Op::Sub(value, _) => *self.first_mut() -= self.get_with_value(&value.clone())?,
-      Op::Mul(value, _) => *self.first_mut() *= self.get_with_value(&value.clone())?,
-      Op::Div(value, _) => {
-        let value = self.get_with_value(&value.clone())?;
-        *self.first_mut() = self
-          .first()
-          .checked_div(value)
-          .ok_or(InterpretError::DivisionByZero(self.line))?;
+      Stmt::Add(value, _) => self.set_first(self.first() + self.get_with_value(value)?),
+      Stmt::Sub(value, _) => self.set_first(self.first() - self.get_with_value(value)?),
+      Stmt::Mul(value, _) => self.set_first(self.first() * self.get_with_value(value)?),
+      Stmt::Div(value, _) => {
+        self.set_first(
+          self
+            .first()
+            .checked_div(self.get_with_value(value)?)
+            .ok_or(InterpretError::DivisionByZero(self.line))?,
+        );
       }
-      Op::Jump(label, _) => {
+      Stmt::Jump(label, _) => {
         self.pc = self
           .program
           .decode_label(label)
           .ok_or(InterpretError::UnknownLabel(self.line))?;
         should_increment = false;
       }
-      Op::JumpIfZero(label, _) => {
-        if *self.first() == 0 {
+      Stmt::JumpIfZero(label, _) => {
+        if self.first() == 0 {
           self.pc = self
             .program
             .decode_label(label)
@@ -89,8 +92,8 @@ impl Ram {
           should_increment = false;
         }
       }
-      Op::JumpGreatherZero(label, _) => {
-        if *self.first() > 0 {
+      Stmt::JumpGreatherZero(label, _) => {
+        if self.first() > 0 {
           self.pc = self
             .program
             .decode_label(label)
@@ -99,8 +102,8 @@ impl Ram {
           should_increment = false;
         }
       }
-      Op::Output(value, _) => println!("{}", self.get_with_value(&value.clone())?),
-      Op::Input(value, _) => {
+      Stmt::Output(value, _) => println!("{}", self.get_with_value(value)?),
+      Stmt::Input(value, _) => {
         let mut input = String::new();
         std::io::stdin()
           .read_line(&mut input)
@@ -109,12 +112,15 @@ impl Ram {
           .get_with_register(&value.clone())?
           .try_into()
           .map_err(|_| InterpretError::SegmentationFault(self.line))?;
-        *self.registers.get_mut(index) = input
-          .trim()
-          .parse()
-          .map_err(|_| InterpretError::SegmentationFault(self.line))?;
+        self.registers.set(
+          index,
+          input
+            .trim()
+            .parse()
+            .map_err(|_| InterpretError::SegmentationFault(self.line))?,
+        );
       }
-      Op::Halt(_) => self.halt = true,
+      Stmt::Halt(_) => self.halt = true,
     };
 
     if should_increment {
@@ -124,7 +130,8 @@ impl Ram {
     Ok(())
   }
 
-  fn get_with_value(&mut self, value: &Value) -> Result<i64, InterpretError> {
+  #[inline]
+  fn get_with_value(&self, value: &Value) -> Result<i64, InterpretError> {
     match value {
       Value::Pure(index) => self.get::<0>(*index),
       Value::Register(RegisterValue::Direct(index)) => self.get::<1>(*index),
@@ -132,22 +139,25 @@ impl Ram {
     }
   }
 
-  fn get_with_register(&mut self, value: &RegisterValue) -> Result<i64, InterpretError> {
+  #[inline]
+  fn get_with_register(&self, value: &RegisterValue) -> Result<i64, InterpretError> {
     match value {
       RegisterValue::Direct(index) => self.get::<0>(*index),
       RegisterValue::Indirect(index) => self.get::<1>(*index),
     }
   }
 
-  fn first_mut(&mut self) -> &mut i64 {
-    self.registers.first_mut()
+  #[inline]
+  fn set_first(&mut self, value: i64) {
+    self.registers.set(0, value);
   }
 
-  fn first(&self) -> &i64 {
-    self.registers.first()
+  #[inline]
+  fn first(&self) -> i64 {
+    self.registers.get(0)
   }
 
-  fn get<const N: usize>(&mut self, index: usize) -> Result<i64, InterpretError> {
+  fn get<const N: usize>(&self, index: usize) -> Result<i64, InterpretError> {
     if N == 0 {
       return index
         .try_into()
@@ -156,11 +166,13 @@ impl Ram {
 
     let mut index = index;
     for _ in 0..N - 1 {
-      index = (*self.registers.get_mut(index))
+      index = self
+        .registers
+        .get(index)
         .try_into()
         .map_err(|_| InterpretError::SegmentationFault(self.line))?
     }
-    Ok(*self.registers.get_mut(index))
+    Ok(self.registers.get(index))
   }
 }
 
@@ -181,3 +193,49 @@ impl std::fmt::Display for InterpretError {
 }
 
 impl std::error::Error for InterpretError {}
+
+impl Iterator for Ram {
+  type Item = Result<RamState, InterpretError>;
+  fn next(&mut self) -> Option<Self::Item> {
+    let out = self.step().map(|_| RamState::from(&*self));
+    if self.halt {
+      None
+    } else {
+      Some(out)
+    }
+  }
+}
+
+#[derive(Default, Debug, Clone)]
+pub struct RamState {
+  pub program: Program,
+  pub registers: Registers<i64>,
+  pub pc: usize,
+  pub line: usize,
+  pub halt: bool,
+}
+
+impl From<&Ram> for RamState {
+  fn from(ram: &Ram) -> Self {
+    Self {
+      program: ram.program.clone(),
+      registers: ram.registers.clone(),
+      pc: ram.pc,
+      line: ram.line,
+      halt: ram.halt,
+    }
+  }
+}
+
+impl From<RamState> for Ram {
+  fn from(state: RamState) -> Self {
+    Self {
+      program: state.program,
+      registers: state.registers,
+      pc: state.pc,
+      line: state.line,
+      halt: state.halt,
+    }
+  }
+}
+

@@ -1,11 +1,11 @@
 use std::error::Error;
 
-use crate::op::Label;
-use crate::op::Op;
-use crate::op::RegisterValue;
-use crate::op::Value;
+use crate::stmt::Label;
+use crate::stmt::RegisterValue;
+use crate::stmt::Stmt;
+use crate::stmt::Value;
 
-pub fn parse(source: &str) -> impl Iterator<Item = Result<Op, ParseError>> + '_ {
+pub fn parse(source: &str) -> impl Iterator<Item = Result<Stmt, ParseError>> + '_ {
   source
     .lines()
     .enumerate()
@@ -14,7 +14,7 @@ pub fn parse(source: &str) -> impl Iterator<Item = Result<Op, ParseError>> + '_ 
     .map(|(i, l)| parse_line(l, i))
 }
 
-pub fn parse_line(line: &str, index: usize) -> Result<Op, ParseError> {
+pub fn parse_line(line: &str, index: usize) -> Result<Stmt, ParseError> {
   let facts: Vec<_> = line.split_whitespace().collect();
 
   if facts.len() > 2 && !facts[2].starts_with('#') {
@@ -26,14 +26,14 @@ pub fn parse_line(line: &str, index: usize) -> Result<Op, ParseError> {
 
   if let Some(label) = first.strip_suffix(':') {
     if is_valid_label(label) {
-      return Ok(Op::Label(label.to_string(), index));
+      return Ok(Stmt::Label(label.to_string(), index));
     }
     Err(ParseError {})?
   }
 
   let opcode = first.to_uppercase();
 
-  let op = match opcode.as_str() {
+  let stmt = match opcode.as_str() {
     "LOAD" | "ADD" | "SUB" | "MUL" | "DIV" | "WRITE" | "OUTPUT" => {
       parse_with_value(&opcode, tail.ok_or(ParseError {})?, index)?
     }
@@ -41,14 +41,14 @@ pub fn parse_line(line: &str, index: usize) -> Result<Op, ParseError> {
       parse_with_label(&opcode, tail.ok_or(ParseError {})?, index)?
     }
     "STORE" | "INPUT" | "READ" => parse_with_register(&opcode, tail.ok_or(ParseError {})?, index)?,
-    "HALT" => Op::Halt(index),
+    "HALT" => Stmt::Halt(index),
     _ => Err(ParseError {})?,
   };
 
-  Ok(op)
+  Ok(stmt)
 }
 
-fn parse_with_register(head: &str, tail: &str, index: usize) -> Result<Op, ParseError> {
+fn parse_with_register(head: &str, tail: &str, index: usize) -> Result<Stmt, ParseError> {
   let arg: RegisterValue = {
     if let Some(tail) = tail.strip_prefix('*') {
       RegisterValue::Indirect(tail.parse().map_err(|_| ParseError {})?)
@@ -59,13 +59,13 @@ fn parse_with_register(head: &str, tail: &str, index: usize) -> Result<Op, Parse
     }
   };
   match head {
-    "STORE" => Ok(Op::Store(arg, index)),
-    "INPUT" | "READ" => Ok(Op::Input(arg, index)),
+    "STORE" => Ok(Stmt::Store(arg, index)),
+    "INPUT" | "READ" => Ok(Stmt::Input(arg, index)),
     _ => Err(ParseError {})?,
   }
 }
 
-fn parse_with_value(head: &str, tail: &str, index: usize) -> Result<Op, ParseError> {
+fn parse_with_value(head: &str, tail: &str, index: usize) -> Result<Stmt, ParseError> {
   let arg: Value = {
     if let Some(tail) = tail.strip_prefix('=') {
       Value::Pure(tail.parse().map_err(|_| ParseError {})?)
@@ -81,17 +81,17 @@ fn parse_with_value(head: &str, tail: &str, index: usize) -> Result<Op, ParseErr
   };
 
   match head {
-    "LOAD" => Ok(Op::Load(arg, index)),
-    "OUTPUT" | "WRITE" => Ok(Op::Output(arg, index)),
-    "ADD" => Ok(Op::Add(arg, index)),
-    "SUB" => Ok(Op::Sub(arg, index)),
-    "MUL" => Ok(Op::Mul(arg, index)),
-    "DIV" => Ok(Op::Div(arg, index)),
+    "LOAD" => Ok(Stmt::Load(arg, index)),
+    "OUTPUT" | "WRITE" => Ok(Stmt::Output(arg, index)),
+    "ADD" => Ok(Stmt::Add(arg, index)),
+    "SUB" => Ok(Stmt::Sub(arg, index)),
+    "MUL" => Ok(Stmt::Mul(arg, index)),
+    "DIV" => Ok(Stmt::Div(arg, index)),
     _ => Err(ParseError {})?,
   }
 }
 
-fn parse_with_label(head: &str, tail: &str, index: usize) -> Result<Op, ParseError> {
+fn parse_with_label(head: &str, tail: &str, index: usize) -> Result<Stmt, ParseError> {
   let label: Label = if is_valid_label(tail) {
     Label::new(tail.to_string())
   } else {
@@ -99,9 +99,9 @@ fn parse_with_label(head: &str, tail: &str, index: usize) -> Result<Op, ParseErr
   };
 
   match head {
-    "JUMP" | "JMP" => Ok(Op::Jump(label, index)),
-    "JZ" | "JZERO" => Ok(Op::JumpIfZero(label, index)),
-    "JGZ" | "JGTZ" => Ok(Op::JumpGreatherZero(label, index)),
+    "JUMP" | "JMP" => Ok(Stmt::Jump(label, index)),
+    "JZ" | "JZERO" => Ok(Stmt::JumpIfZero(label, index)),
+    "JGZ" | "JGTZ" => Ok(Stmt::JumpGreatherZero(label, index)),
     _ => Err(ParseError {})?,
   }
 }
