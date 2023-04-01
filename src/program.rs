@@ -1,6 +1,10 @@
 use std::collections::HashMap;
 
-use crate::{stmt::{Label, Stmt}, parser::{ParseError, self}};
+use crate::{
+  errors::ParseError,
+  parser,
+  stmt::{Label, Stmt},
+};
 
 #[derive(Default, Debug, Clone)]
 pub struct Program {
@@ -23,6 +27,7 @@ impl Program {
 
     Ok(Program::new(stmts))
   }
+  #[inline]
   pub fn init_labels(&mut self) {
     self.labels.clear();
     for (index, op) in self.instructions.iter().enumerate() {
@@ -60,4 +65,3 @@ impl Program {
     self.init_labels();
   }
 }
-
