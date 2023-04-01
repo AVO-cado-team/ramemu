@@ -1,6 +1,6 @@
 # RAM Emulator
 
-![Version 0.1.0](https://img.shields.io/badge/version-0.1.0-blue.svg)
+![Version 0.1.2](https://img.shields.io/badge/version-0.1.2-blue.svg)
 [![License](https://img.shields.io/badge/license-GNU3-blue.svg)](./LICENSE)
 [![Ddystopia](https://img.shields.io/badge/Author-Ddystopia-blue.svg?style=flat)](mailto:alexanderbabak@proton.me)
 [![Ddystopia](https://img.shields.io/badge/Github-Ddystopia-green.svg?style=flat)](https://github.com/Ddystopia/)
@@ -23,7 +23,7 @@ Add the library as a dependency to your Rust project by including the following
 in your `Cargo.toml` file:
 
 ```toml
-ram = { git = "https://github.com/AVO-cado-team/RamEmu.git", tag = "0.1.1"}
+ram = { git = "https://github.com/AVO-cado-team/ramemu.git", tag = "0.1.2"}
 ```
 
 ## Examples
