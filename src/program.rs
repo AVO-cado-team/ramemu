@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::stmt::{Label, Stmt};
+use crate::{stmt::{Label, Stmt}, parser::{ParseError, self}};
 
 #[derive(Default, Debug, Clone)]
 pub struct Program {
@@ -16,6 +16,12 @@ impl Program {
     };
     p.init_labels();
     p
+  }
+  pub fn from_source(source: &str) -> Result<Program, ParseError> {
+    let stmts: Result<Vec<Stmt>, ParseError> = parser::parse(source).collect();
+    let stmts = stmts?;
+
+    Ok(Program::new(stmts))
   }
   pub fn init_labels(&mut self) {
     self.labels.clear();
