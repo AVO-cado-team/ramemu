@@ -23,7 +23,7 @@ Add the library as a dependency to your Rust project by including the following
 in your `Cargo.toml` file:
 
 ```toml
-ram = { git = "https://github.com/AVO-cado-team/RamEmu.git", tag = "0.1.0"}
+ram = { git = "https://github.com/AVO-cado-team/RamEmu.git", tag = "0.1.1"}
 ```
 
 ## Examples
@@ -34,9 +34,10 @@ Here's an example of how to use the library to create a RAM program and run it:
 
 use ram::{create_program, ram::Ram};
 
-fn main() { 
+fn main() {
     let source = r#"
-      # Your RAM assembly code here 
+      # Your RAM assembly code here
+      HALT
     "#;
 
     let program = create_program(source).unwrap();
@@ -54,9 +55,11 @@ fn main() {
 ## Supported Syntax
 
 The parser supports the following syntax:
+
 - Comments: Start with `#`
 - Labels: End with `:`
-- Links: Types include explicit (`int`), without link (`=int`), and double link (`*int`)
+- Links: Types include explicit (`{usize}`), without link (`={usize}`), and
+  double link (`*{usize}`)
 
 ## Limitations and Future Improvements
 
@@ -69,4 +72,3 @@ features.
 Contributions to the project are welcome. You can report bugs, request features,
 or submit pull requests. Before submitting a pull request, make sure your
 changes are well-tested and documented.
-
