@@ -5,6 +5,7 @@ pub enum InterpretError {
   InvalidInput(usize, String),
   InvalidLiteral(usize),
   DivisionByZero(usize),
+  WriteError(usize),
   Halted(usize),
 }
 
@@ -15,4 +16,3 @@ impl std::fmt::Display for InterpretError {
 }
 
 impl std::error::Error for InterpretError {}
-
