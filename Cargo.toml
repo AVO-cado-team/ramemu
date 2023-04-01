@@ -1,12 +1,17 @@
 [package]
 name = "ram"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "GPL3"
 
 [dependencies]
+wasm-bindgen = { version = "0.2.84", optional = true }
+
+[features]
+wasm = ["wasm-bindgen"]
 
 [profile.release]
-opt-level = 3
 lto = true
+codegen-units = 1
+strip = true
+opt-level = 3
