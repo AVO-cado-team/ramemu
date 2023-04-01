@@ -34,9 +34,9 @@ Here's an example of how to use the library to create a RAM program and run it:
 
 use ram::{create_program, ram::Ram};
 
-fn main() { 
+fn main() {
     let source = r#"
-      # Your RAM assembly code here 
+      # Your RAM assembly code here
       HALT
     "#;
 
@@ -55,9 +55,11 @@ fn main() {
 ## Supported Syntax
 
 The parser supports the following syntax:
+
 - Comments: Start with `#`
 - Labels: End with `:`
-- Links: Types include explicit (`{usize}`), without link (`={usize}`), and double link (`*{usize}`)
+- Links: Types include explicit (`{usize}`), without link (`={usize}`), and
+  double link (`*{usize}`)
 
 ## Limitations and Future Improvements
 
@@ -70,4 +72,3 @@ features.
 Contributions to the project are welcome. You can report bugs, request features,
 or submit pull requests. Before submitting a pull request, make sure your
 changes are well-tested and documented.
-

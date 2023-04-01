@@ -5,4 +5,8 @@ pub mod registers;
 pub mod stmt;
 pub mod errors;
 
+#[cfg(feature = "wasm")]
+pub mod wasm_bindings;
+
+
 // TODO: Serde feature
