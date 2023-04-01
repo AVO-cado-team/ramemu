@@ -23,7 +23,7 @@ Add the library as a dependency to your Rust project by including the following
 in your `Cargo.toml` file:
 
 ```toml
-ram = { git = "https://github.com/AVO-cado-team/RamEmu.git", tag = "0.1.0"}
+ram = { git = "https://github.com/AVO-cado-team/ramemu.git", tag = "0.1.0"}
 ```
 
 ## Examples
