@@ -33,7 +33,6 @@ impl Stmt {
       Stmt::Label(_, line) => *line,
       Stmt::Halt(line) => *line,
     }
-  
   }
 }
 

@@ -1,10 +1,15 @@
+use std::fmt::Debug;
+use std::fmt::Formatter;
+use std::io::BufRead;
+use std::io::Write;
+
+use crate::errors::InterpretError;
 use crate::program::Program;
 use crate::registers::Registers;
 use crate::stmt::RegisterValue;
 use crate::stmt::Stmt;
 use crate::stmt::Value;
 
-#[derive(Debug, Clone)]
 pub struct Ram {
   program: Program,
   registers: Registers<i64>,
@@ -12,10 +17,12 @@ pub struct Ram {
   line: usize,
   halt: bool,
   error: Option<InterpretError>,
+  reader: Box<dyn BufRead>,
+  writer: Box<dyn Write>,
 }
 
 impl Ram {
-  pub fn new(program: Program) -> Self {
+  pub fn new(program: Program, reader: Box<dyn BufRead>, writer: Box<dyn Write>) -> Self {
     Ram {
       program,
       registers: [0; 100].into(),
@@ -23,6 +30,8 @@ impl Ram {
       line: 0,
       halt: false,
       error: None,
+      reader,
+      writer,
     }
   }
 
@@ -116,10 +125,15 @@ impl Ram {
           should_increment = false;
         }
       }
-      Stmt::Output(value, _) => println!("{}", self.get_with_value(value)?),
+      Stmt::Output(value, _) => {
+        let value = self.get_with_value(value)?;
+        writeln!(&mut self.writer, "{}", value)
+          .map_err(|_| InterpretError::WriteError(self.line))?
+      }
       Stmt::Input(value, _) => {
         let mut input = String::new();
-        std::io::stdin()
+        self
+          .reader
           .read_line(&mut input)
           .map_err(|_| InterpretError::InvalidInput(self.line, input.clone()))?;
         let index: usize = self
@@ -190,23 +204,18 @@ impl Ram {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum InterpretError {
-  SegmentationFault(usize),
-  UnknownLabel(usize),
-  InvalidInput(usize, String),
-  InvalidLiteral(usize),
-  DivisionByZero(usize),
-  Halted(usize),
-}
-
-impl std::fmt::Display for InterpretError {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "InterpretError")
+impl Debug for Ram {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("Ram")
+      .field("program", &self.program)
+      .field("registers", &self.registers)
+      .field("pc", &self.pc)
+      .field("line", &self.line)
+      .field("halt", &self.halt)
+      .field("error", &self.error)
+      .finish()
   }
 }
-
-impl std::error::Error for InterpretError {}
 
 impl Iterator for Ram {
   type Item = Result<RamState, InterpretError>;
@@ -241,15 +250,17 @@ impl From<&Ram> for RamState {
   }
 }
 
-impl From<RamState> for Ram {
-  fn from(state: RamState) -> Self {
-    Self {
-      program: state.program,
-      registers: state.registers,
-      pc: state.pc,
-      line: state.line,
-      halt: state.halt,
-      error: state.error,
+impl RamState {
+  pub fn create_ram(self, reader: Box<dyn BufRead>, writer: Box<dyn Write>) -> Ram {
+    Ram {
+      program: self.program,
+      registers: self.registers,
+      pc: self.pc,
+      line: self.line,
+      halt: self.halt,
+      error: self.error,
+      reader,
+      writer,
     }
   }
 }
