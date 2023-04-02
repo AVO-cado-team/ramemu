@@ -22,6 +22,7 @@ pub struct Ram {
 }
 
 impl Ram {
+  #[inline]
   pub fn new(program: Program, reader: Box<dyn BufRead>, writer: Box<dyn Write>) -> Self {
     Ram {
       program,
@@ -55,20 +56,24 @@ impl Ram {
   // proxy to halt on error
   pub fn step(&mut self) -> Result<(), InterpretError> {
     let result = self.eval_current();
-    if result.is_err() {
+    if let Ok(next_pc) = result {
+      self.pc = next_pc;
+    } else {
       self.halt = true;
     }
     result.map(|_| ())
   }
 
+  #[inline]
   pub fn get_error(&self) -> Option<InterpretError> {
     self.error.clone()
   }
 
+  #[inline]
   pub fn eval(&mut self, stmt: Stmt) -> Result<(), InterpretError> {
     let inject_into = self.pc;
     self.program.inject_instruction(stmt, inject_into);
-    self.eval_current()?;
+    let _next_pc = self.eval_current()?;
     self.program.remove_instruction(inject_into);
     Ok(())
   }
@@ -82,8 +87,8 @@ impl Ram {
       return Err(InterpretError::SegmentationFault(self.line));
     };
 
-    let mut next_pc = self.pc + 1;
     self.line = stmt.get_line();
+    let mut next_pc = self.pc + 1;
 
     match stmt {
       Stmt::Label(..) => {}
