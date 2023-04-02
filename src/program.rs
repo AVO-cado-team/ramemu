@@ -45,14 +45,24 @@ impl Program {
     self.labels.get(label.get()).copied()
   }
   #[inline]
-  pub fn inject_instructions(&mut self, instruction: Vec<Stmt>, index: usize) {
+  pub fn inject_instruction(&mut self, instruction: Stmt, index: usize) {
+    self.instructions.insert(index, instruction);
+    self.init_labels();
+  }
+  #[inline]
+  pub fn remove_instruction(&mut self, index: usize) {
+    self.instructions.remove(index);
+    self.init_labels();
+  }
+  #[inline]
+  pub fn inject_instructions(&mut self, instruction: Box<[Stmt]>, index: usize) {
     let tail = self.instructions.split_off(index);
-    self.instructions.extend(instruction);
+    self.instructions.extend(instruction.into_vec().into_iter());
     self.instructions.extend(tail);
     self.init_labels();
   }
   #[inline]
-  pub fn remove_instructions(&mut self, indexes: Vec<usize>) {
+  pub fn remove_instructions(&mut self, indexes: &[usize]) {
     let to_remove: Vec<Stmt> = self
       .instructions
       .iter()
