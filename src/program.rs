@@ -21,12 +21,14 @@ impl Program {
     p.init_labels();
     p
   }
+
   pub fn from_source(source: &str) -> Result<Program, ParseError> {
     let stmts: Result<Vec<Stmt>, ParseError> = parser::parse(source).collect();
     let stmts = stmts?;
 
     Ok(Program::new(stmts))
   }
+
   #[inline]
   pub fn init_labels(&mut self) {
     self.labels.clear();
@@ -36,14 +38,17 @@ impl Program {
       }
     }
   }
+
   #[inline]
   pub fn get(&self, index: usize) -> Option<&Stmt> {
     self.instructions.get(index)
   }
+
   #[inline]
   pub fn decode_label(&self, label: &Label) -> Option<usize> {
     self.labels.get(label.get()).copied()
   }
+
   #[inline]
   pub fn inject_instructions(&mut self, instruction: Vec<Stmt>, index: usize) {
     let tail = self.instructions.split_off(index);
@@ -51,6 +56,7 @@ impl Program {
     self.instructions.extend(tail);
     self.init_labels();
   }
+
   #[inline]
   pub fn remove_instructions(&mut self, indexes: Vec<usize>) {
     let to_remove: Vec<Stmt> = self
