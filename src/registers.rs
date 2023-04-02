@@ -1,7 +1,9 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::iter::FromIterator;
 
+/// Represents an infinite set of registers.
 #[derive(Default, Clone, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct Registers<T> {
@@ -9,11 +11,13 @@ pub struct Registers<T> {
 }
 
 impl<T: Clone + Default> Registers<T> {
+  /// Returns the value of the register at the given index.
   #[inline]
   pub(crate) fn get(&self, index: usize) -> T {
     let mut map = self.registers.borrow_mut();
     map.entry(index).or_default().clone()
   }
+  /// Sets the value of the register at the given index.
   #[inline]
   pub(crate) fn set(&mut self, index: usize, value: T) {
     self.registers.get_mut().insert(index, value);
