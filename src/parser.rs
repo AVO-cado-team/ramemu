@@ -9,7 +9,7 @@ pub fn parse(source: &str) -> impl Iterator<Item = Result<Stmt, ParseError>> + '
   source
     .lines()
     .enumerate()
-    .map(|(i, l)| (i, l.trim()))
+    .map(|(i, l)| (i + 1, l.trim()))
     .map(|(i, l)| parse_line(l, i))
     .filter_map(|result| result.transpose())
 }
