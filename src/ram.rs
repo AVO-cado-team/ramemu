@@ -22,6 +22,7 @@ pub struct Ram {
 }
 
 impl Ram {
+  #[inline]
   pub fn new(program: Program, reader: Box<dyn BufRead>, writer: Box<dyn Write>) -> Self {
     Ram {
       program,
@@ -53,18 +54,30 @@ impl Ram {
   }
 
   pub fn step(&mut self) -> Result<(), InterpretError> {
-    let result = self.step_internal();
-    if result.is_err() {
+    let result = self.eval_current();
+    if let Ok(next_pc) = result {
+      self.pc = next_pc;
+    } else {
       self.halt = true;
     }
-    result
+    result.map(|_| ())
   }
 
+  #[inline]
   pub fn get_error(&self) -> Option<InterpretError> {
     self.error.clone()
   }
 
-  fn step_internal(&mut self) -> Result<(), InterpretError> {
+  #[inline]
+  pub fn eval(&mut self, stmt: Stmt) -> Result<(), InterpretError> {
+    let inject_into = self.pc;
+    self.program.inject_instruction(stmt, inject_into);
+    let _next_pc = self.eval_current()?;
+    self.program.remove_instruction(inject_into);
+    Ok(())
+  }
+
+  fn eval_current(&mut self) -> Result<usize, InterpretError> {
     if self.halt {
       return Err(InterpretError::Halted(self.line));
     }
@@ -73,9 +86,8 @@ impl Ram {
       return Err(InterpretError::SegmentationFault(self.line));
     };
 
-    let mut should_increment = true;
-
     self.line = stmt.get_line();
+    let mut next_pc = self.pc + 1;
 
     match stmt {
       Stmt::Label(..) => {}
@@ -99,30 +111,25 @@ impl Ram {
         );
       }
       Stmt::Jump(label, _) => {
-        self.pc = self
+        next_pc = self
           .program
           .decode_label(label)
           .ok_or(InterpretError::UnknownLabel(self.line))?;
-        should_increment = false;
       }
       Stmt::JumpIfZero(label, _) => {
         if self.first() == 0 {
-          self.pc = self
+          next_pc = self
             .program
             .decode_label(label)
             .ok_or(InterpretError::UnknownLabel(self.line))?;
-
-          should_increment = false;
         }
       }
       Stmt::JumpGreatherZero(label, _) => {
         if self.first() > 0 {
-          self.pc = self
+          next_pc = self
             .program
             .decode_label(label)
             .ok_or(InterpretError::UnknownLabel(self.line))?;
-
-          should_increment = false;
         }
       }
       Stmt::Output(value, _) => {
@@ -151,11 +158,7 @@ impl Ram {
       Stmt::Halt(_) => self.halt = true,
     };
 
-    if should_increment {
-      self.pc += 1;
-    }
-
-    Ok(())
+    Ok(next_pc)
   }
 
   #[inline]
@@ -235,6 +238,19 @@ pub struct RamState {
   pub line: usize,
   pub halt: bool,
   pub error: Option<InterpretError>,
+}
+
+impl From<Ram> for RamState {
+  fn from(ram: Ram) -> Self {
+    Self {
+      program: ram.program,
+      registers: ram.registers,
+      pc: ram.pc,
+      line: ram.line,
+      halt: ram.halt,
+      error: ram.error,
+    }
+  }
 }
 
 impl From<&Ram> for RamState {
