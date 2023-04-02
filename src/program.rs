@@ -55,9 +55,12 @@ impl Program {
     self.init_labels();
   }
   #[inline]
-  pub fn inject_instructions(&mut self, instruction: Box<[Stmt]>, index: usize) {
+  pub fn inject_instructions<T>(&mut self, instruction: T, index: usize)
+  where
+    T: IntoIterator<Item = Stmt>,
+  {
     let tail = self.instructions.split_off(index);
-    self.instructions.extend(instruction.into_vec().into_iter());
+    self.instructions.extend(instruction.into_iter());
     self.instructions.extend(tail);
     self.init_labels();
   }
