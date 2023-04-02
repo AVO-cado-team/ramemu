@@ -6,13 +6,17 @@ use crate::{
   stmt::{Label, Stmt},
 };
 
+/// Represents a program code.
 #[derive(Default, Debug, Clone)]
 pub struct Program {
+  /// Instructions of the program.
   pub instructions: Vec<Stmt>,
+  /// Labels of the program.
   pub labels: HashMap<String, usize>,
 }
 
 impl Program {
+  /// Creates a new [`Program`] from the vector of [`Stmt`]
   pub fn new(instructions: Vec<Stmt>) -> Self {
     let mut p = Program {
       instructions,
@@ -22,6 +26,7 @@ impl Program {
     p
   }
 
+  /// Creates a new [`Program`] from the source code.
   pub fn from_source(source: &str) -> Result<Program, ParseError> {
     let stmts: Result<Vec<Stmt>, ParseError> = parser::parse(source).collect();
     let stmts = stmts?;
@@ -29,6 +34,7 @@ impl Program {
     Ok(Program::new(stmts))
   }
 
+  /// Initializes labels of the program.
   #[inline]
   pub fn init_labels(&mut self) {
     self.labels.clear();
@@ -39,26 +45,33 @@ impl Program {
     }
   }
 
+  /// Returns the insturction at given index
   #[inline]
   pub fn get(&self, index: usize) -> Option<&Stmt> {
     self.instructions.get(index)
   }
 
+  /// Decodes the label into the instruction index.
   #[inline]
   pub fn decode_label(&self, label: &Label) -> Option<usize> {
     self.labels.get(label.get()).copied()
   }
 
+  /// Injects an instruction at given index.
   #[inline]
   pub fn inject_instruction(&mut self, instruction: Stmt, index: usize) {
     self.instructions.insert(index, instruction);
     self.init_labels();
   }
+
+  /// Removes an instruction at given index.
   #[inline]
   pub fn remove_instruction(&mut self, index: usize) {
     self.instructions.remove(index);
     self.init_labels();
   }
+
+  /// Injects instructions at given index.
   #[inline]
   pub fn inject_instructions<T>(&mut self, instructions: T, index: usize)
   where
@@ -70,6 +83,7 @@ impl Program {
     self.init_labels();
   }
 
+  /// Removes instructions at given indexies.
   #[inline]
   pub fn remove_instructions(&mut self, indexes: &[usize]) {
     let to_remove: Vec<Stmt> = self
