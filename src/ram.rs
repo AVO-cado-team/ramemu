@@ -53,7 +53,6 @@ impl Ram {
     Ok(())
   }
 
-  // proxy to halt on error
   pub fn step(&mut self) -> Result<(), InterpretError> {
     let result = self.eval_current();
     if let Ok(next_pc) = result {
