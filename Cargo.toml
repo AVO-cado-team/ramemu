@@ -1,6 +1,6 @@
 [package]
-name = "ram"
-version = "0.1.2"
+name = "ramemu"
+version = "0.1.3"
 edition = "2021"
 license = "GPL3"
 
