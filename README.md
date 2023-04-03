@@ -2,7 +2,7 @@
 
 ![Version 0.1.3](https://img.shields.io/badge/version-0.1.3-blue.svg)
 [![License](https://img.shields.io/badge/license-GNU3-blue.svg)](./LICENSE)
-[![Ddystopia](https://img.shields.io/badge/Author-Ddystopia-blue.svg?style=flat)](mailto:alexanderbabak@proton.me)
+[![Oleksandr Babak](https://img.shields.io/badge/Author-Oleksandr%20Babak-blue.svg?style=flat)](mailto:alexanderbabak@proton.me)
 [![Ddystopia](https://img.shields.io/badge/Github-Ddystopia-green.svg?style=flat)](https://github.com/Ddystopia/)
 
 A Rust-based library for emulating a Random Access Machine (RAM). This library
