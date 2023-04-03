@@ -1,6 +1,6 @@
 use std::io::{stdin, stdout, BufReader};
 
-use ram::{program::Program, ram::Ram};
+use ramemu::{program::Program, ram::Ram};
 
 fn main() {
   let source = r#"
