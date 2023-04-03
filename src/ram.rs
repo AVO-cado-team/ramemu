@@ -180,14 +180,14 @@ impl Ram {
       Stmt::Jump(label, _) => {
         next_pc = self
           .program
-          .decode_label(label)
+          .decode_label(*label)
           .ok_or(InterpretError::UnknownLabel(self.line))?;
       }
       Stmt::JumpIfZero(label, _) => {
         if self.first() == 0 {
           next_pc = self
             .program
-            .decode_label(label)
+            .decode_label(*label)
             .ok_or(InterpretError::UnknownLabel(self.line))?;
         }
       }
@@ -195,23 +195,23 @@ impl Ram {
         if self.first() > 0 {
           next_pc = self
             .program
-            .decode_label(label)
+            .decode_label(*label)
             .ok_or(InterpretError::UnknownLabel(self.line))?;
         }
       }
       Stmt::Output(value, _) => {
         let value = self.get_with_value(value)?;
         writeln!(&mut self.writer, "{}", value)
-          .map_err(|_| InterpretError::WriteError(self.line))?
+          .map_err(|_| InterpretError::IOError(self.line))?
       }
       Stmt::Input(value, _) => {
         let mut input = String::new();
         self
           .reader
           .read_line(&mut input)
-          .map_err(|_| InterpretError::InvalidInput(self.line, input.clone()))?;
+          .map_err(|_| InterpretError::IOError(self.line))?;
         let index: usize = self
-          .get_with_register(&value.clone())?
+          .get_with_register(value)?
           .try_into()
           .map_err(|_| InterpretError::SegmentationFault(self.line))?;
         self.registers.set(
@@ -219,7 +219,7 @@ impl Ram {
           input
             .trim()
             .parse()
-            .map_err(|_| InterpretError::SegmentationFault(self.line))?,
+            .map_err(|_| InterpretError::InvalidInput(self.line, input.trim().to_string()))?,
         );
       }
       Stmt::Halt(_) => self.halt = true,

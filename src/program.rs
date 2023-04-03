@@ -1,7 +1,8 @@
 //! The [`Program`] module represents a program in the assembly language. It contains
 //! the instructions and labels of the program, and provides methods for creating,
 //! modifying, and querying the program structure.
-use std::collections::HashMap;
+// use std::collections::HashMap;
+use rustc_hash::FxHashMap as HashMap;
 
 use crate::{
   errors::ParseError,
@@ -19,7 +20,8 @@ pub struct Program {
   /// Instructions of the program.
   pub instructions: Vec<Stmt>,
   /// Labels of the program.
-  pub labels: HashMap<String, usize>,
+  pub label_ids: HashMap<String, usize>,
+  pub labels: Vec<usize>,
 }
 
 impl Program {
@@ -29,7 +31,7 @@ impl Program {
   pub fn from(instructions: Vec<Stmt>) -> Self {
     let mut p = Program {
       instructions,
-      labels: HashMap::new(),
+      ..Default::default()
     };
     p.init_labels();
     p
@@ -40,25 +42,64 @@ impl Program {
   /// This method parses the source code, creating a [`Program`] with the resulting
   /// instructions and labels.
   pub fn from_source(source: &str) -> Result<Program, ParseError> {
-    let stmts: Result<Vec<Stmt>, ParseError> = parser::parse(source).collect();
-    let stmts = stmts?;
+    let mut label_ids = HashMap::default();
+    let stmts: Result<Vec<Stmt>, ParseError> = parser::parse(source, &mut label_ids).collect();
+    let instructions = stmts?;
+    let labels_idx: Vec<_> = instructions
+      .iter()
+      .enumerate()
+      .filter_map(|(pc, stmt)| match stmt {
+        Stmt::Label(id, _) => Some((pc, usize::from(*id))),
+        _ => None,
+      })
+      .collect();
 
-    Ok(Program::from(stmts))
+    if labels_idx.len() != label_ids.len() {
+      let bad_id = label_ids
+        .values()
+        .find(|id| !labels_idx.iter().any(|(_, id2)| *id2 == **id))
+        .expect("There is some extra label, but I can't find it.");
+      let bad_line = instructions.into_iter().find(|stmt| match stmt {
+        Stmt::Jump(id, _) => usize::from(*id) == *bad_id,
+        Stmt::JumpIfZero(id, _) => usize::from(*id) == *bad_id,
+        Stmt::JumpGreatherZero(id, _) => usize::from(*id) == *bad_id,
+        _ => false,
+      });
+      return Err(ParseError::LabelIsNotValid(bad_line.unwrap().get_line()));
+    }
+
+    let mut labels = vec![None; labels_idx.len()];
+
+    for (pc, id) in labels_idx.iter() {
+      labels[*id] = Some(*pc);
+    }
+
+    let labels = labels
+      .into_iter()
+      .map(|x| x.expect("There were > 1 labels with the same id"))
+      .collect();
+
+    Ok(Program {
+      instructions,
+      label_ids,
+      labels,
+    })
   }
 
   /// Initializes labels of the program.
   ///
   /// This method updates the internal label mapping based on the current instructions.
   #[inline]
-  pub fn init_labels(&mut self) {
+  pub fn init_labels(self: &mut Program) {
+    /*
     self.labels.clear();
     for (index, op) in self.instructions.iter().enumerate() {
       if let Stmt::Label(label, _) = op {
-        self.labels.insert(label.clone(), index);
+        // self.labels.insert(label.get().as_ptr(), index);
       }
     }
+    */
   }
-
 
   /// Returns the instruction at the given index.
   ///
@@ -72,8 +113,8 @@ impl Program {
   ///
   /// If the label is not found, returns `None`.
   #[inline]
-  pub fn decode_label(&self, label: &Label) -> Option<usize> {
-    self.labels.get(label.get()).copied()
+  pub fn decode_label(&self, label: Label) -> Option<usize> {
+    self.labels.get(usize::from(label)).copied()
   }
 
   /// Injects an instruction at given index.

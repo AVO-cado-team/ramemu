@@ -3,6 +3,8 @@
 //! individual lines of source code as well as entire programs.
 //!
 
+use rustc_hash::FxHashMap as HashMap;
+
 use crate::errors::ParseError;
 
 use crate::stmt::Label;
@@ -14,12 +16,15 @@ use crate::stmt::Value;
 ///
 /// This function processes each line of the source code, parsing it into a [`Stmt`] or
 /// a [`ParseError`] if an error occurs. It skips empty lines and comments.
-pub fn parse(source: &str) -> impl Iterator<Item = Result<Stmt, ParseError>> + '_ {
+pub fn parse<'a>(
+  source: &'a str,
+  label_ids: &'a mut HashMap<String, usize>,
+) -> impl Iterator<Item = Result<Stmt, ParseError>> + 'a {
   source
     .lines()
     .enumerate()
     .map(|(i, l)| (i + 1, l.trim()))
-    .map(|(i, l)| parse_line(l, i))
+    .map(move |(i, l)| parse_line(l, i, label_ids))
     .filter_map(|result| result.transpose())
 }
 
@@ -29,7 +34,11 @@ pub fn parse(source: &str) -> impl Iterator<Item = Result<Stmt, ParseError>> + '
 /// This function processes a single line of source code, returning `None` for empty lines
 /// or lines containing only comments. If the line contains an instruction or label, it returns
 /// a [`Stmt`] wrapped in a `Some`. In case of a parsing error, it returns a [`ParseError`]
-pub fn parse_line(source: &str, line: usize) -> Result<Option<Stmt>, ParseError> {
+pub fn parse_line(
+  source: &str,
+  line: usize,
+  label_ids: &mut HashMap<String, usize>,
+) -> Result<Option<Stmt>, ParseError> {
   let facts: Vec<_> = source
     .split('#')
     .next()
@@ -50,7 +59,9 @@ pub fn parse_line(source: &str, line: usize) -> Result<Option<Stmt>, ParseError>
 
   if let Some(label) = head.strip_suffix(':') {
     if is_valid_label(label) {
-      return Ok(Some(Stmt::Label(label.to_string(), line)));
+      let len = label_ids.len();
+      let id = *label_ids.entry(label.to_string()).or_insert(len);
+      return Ok(Some(Stmt::Label(Label::from(id), line)));
     }
     Err(ParseError::LabelIsNotValid(line))?
   }
@@ -67,6 +78,7 @@ pub fn parse_line(source: &str, line: usize) -> Result<Option<Stmt>, ParseError>
       &opcode,
       tail.ok_or(ParseError::ArgumentIsRequired(line))?,
       line,
+      label_ids,
     )?,
     "STORE" | "INPUT" | "READ" => parse_with_register(
       &opcode,
@@ -135,9 +147,17 @@ fn parse_with_value(head: &str, tail: &str, line: usize) -> Result<Stmt, ParseEr
   }
 }
 
-fn parse_with_label(head: &str, tail: &str, line: usize) -> Result<Stmt, ParseError> {
+fn parse_with_label(
+  head: &str,
+  tail: &str,
+  line: usize,
+  label_ids: &mut HashMap<String, usize>,
+) -> Result<Stmt, ParseError> {
   let label: Label = if is_valid_label(tail) {
-    Label::new(tail.to_string())
+    let label = tail;
+    let len = label_ids.len();
+    let id = label_ids.entry(label.to_string()).or_insert(len);
+    Label::from(*id)
   } else {
     Err(ParseError::LabelIsNotValid(line))?
   };
