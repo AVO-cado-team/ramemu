@@ -28,13 +28,13 @@ impl Program {
   /// Creates a new [`Program`] from the vector of [`Stmt`].
   ///
   /// This method initializes the labels in the program.
-  pub fn from(instructions: Vec<Stmt>) -> Self {
+  pub fn from(instructions: Vec<Stmt>) -> Result<Program, ParseError> {
     let mut p = Program {
       instructions,
       ..Default::default()
     };
-    p.init_labels();
-    p
+    p.init_labels()?;
+    Ok(p)
   }
 
   /// Creates a new [`Program`] from the source code.
@@ -45,7 +45,23 @@ impl Program {
     let mut label_ids = HashMap::default();
     let stmts: Result<Vec<Stmt>, ParseError> = parser::parse(source, &mut label_ids).collect();
     let instructions = stmts?;
-    let labels_idx: Vec<_> = instructions
+    let mut p = Program {
+      instructions,
+      label_ids,
+      labels: Default::default(),
+    };
+    p.init_labels()?;
+
+    Ok(p)
+  }
+
+  /// Initializes labels of the program.
+  ///
+  /// This method updates the internal label mapping based on the current instructions.
+  #[inline]
+  pub fn init_labels(self: &mut Program) -> Result<(), ParseError> {
+    let labels_idx: Vec<_> = self
+      .instructions
       .iter()
       .enumerate()
       .filter_map(|(pc, stmt)| match stmt {
@@ -54,12 +70,13 @@ impl Program {
       })
       .collect();
 
-    if labels_idx.len() != label_ids.len() {
-      let bad_id = label_ids
+    if labels_idx.len() != self.label_ids.len() {
+      let bad_id = self
+        .label_ids
         .values()
         .find(|id| !labels_idx.iter().any(|(_, id2)| *id2 == **id))
         .expect("There is some extra label, but I can't find it.");
-      let bad_line = instructions.into_iter().find(|stmt| match stmt {
+      let bad_line = self.instructions.iter().find(|stmt| match stmt {
         Stmt::Jump(id, _) => usize::from(*id) == *bad_id,
         Stmt::JumpIfZero(id, _) => usize::from(*id) == *bad_id,
         Stmt::JumpGreatherZero(id, _) => usize::from(*id) == *bad_id,
@@ -74,31 +91,11 @@ impl Program {
       labels[*id] = Some(*pc);
     }
 
-    let labels = labels
+    self.labels = labels
       .into_iter()
       .map(|x| x.expect("There were > 1 labels with the same id"))
       .collect();
-
-    Ok(Program {
-      instructions,
-      label_ids,
-      labels,
-    })
-  }
-
-  /// Initializes labels of the program.
-  ///
-  /// This method updates the internal label mapping based on the current instructions.
-  #[inline]
-  pub fn init_labels(self: &mut Program) {
-    /*
-    self.labels.clear();
-    for (index, op) in self.instructions.iter().enumerate() {
-      if let Stmt::Label(label, _) = op {
-        // self.labels.insert(label.get().as_ptr(), index);
-      }
-    }
-    */
+    Ok(())
   }
 
   /// Returns the instruction at the given index.
@@ -119,33 +116,36 @@ impl Program {
 
   /// Injects an instruction at given index.
   #[inline]
-  pub fn inject_instruction(&mut self, instruction: Stmt, index: usize) {
+  pub fn inject_instruction(&mut self, instruction: Stmt, index: usize) -> Result<(), ParseError> {
     self.instructions.insert(index, instruction);
-    self.init_labels();
+    self.init_labels()?;
+    Ok(())
   }
 
   /// Removes an instruction at given index.
   #[inline]
-  pub fn remove_instruction(&mut self, index: usize) {
+  pub fn remove_instruction(&mut self, index: usize) -> Result<(), ParseError> {
     self.instructions.remove(index);
-    self.init_labels();
+    self.init_labels()?;
+    Ok(())
   }
 
   /// Injects instructions at given index.
   #[inline]
-  pub fn inject_instructions<T>(&mut self, instructions: T, index: usize)
+  pub fn inject_instructions<T>(&mut self, instructions: T, index: usize) -> Result<(), ParseError>
   where
     T: IntoIterator<Item = Stmt>,
   {
     let tail = self.instructions.split_off(index);
     self.instructions.extend(instructions.into_iter());
     self.instructions.extend(tail);
-    self.init_labels();
+    self.init_labels()?;
+    Ok(())
   }
 
   /// Removes instructions at given indexies.
   #[inline]
-  pub fn remove_instructions(&mut self, indexes: &[usize]) {
+  pub fn remove_instructions(&mut self, indexes: &[usize]) -> Result<(), ParseError> {
     let to_remove: Vec<Stmt> = self
       .instructions
       .iter()
@@ -155,6 +155,7 @@ impl Program {
       .collect();
 
     self.instructions.retain(|op| to_remove.contains(op));
-    self.init_labels();
+    self.init_labels()?;
+    Ok(())
   }
 }
