@@ -1,3 +1,59 @@
+//! # RAM Machine Simulation
+//!
+//! This module provides a [`Ram`] struct and related functionalities
+//! for simulating the behavior of a RAM (Random Access Machine) machine.
+//! The RAM machine is a theoretical model of computation that consists of an
+//! infinite array of memory cells, a finite set of registers, and a program counter.
+//! The [`Ram`] struct holds the program, registers, program counter, line
+//! number, halt state, error state, input reader, and output writer.
+//!
+//! The main functionality includes the following methods:
+//!
+//! 1. Creating a new [`Ram`] instance.
+//! 2. Getting the current state of registers.
+//! 3. Fetching the current instruction.
+//! 4. Running the program.
+//! 5. Executing a single instruction.
+//! 6. Getting the current error state.
+//! 7. Evaluating a given statement.
+//! 8. Evaluating the current statement.
+//! 9. TODO: Injecting/Removing instructions somehow.
+//!
+//! The [`Ram`] struct also implements the [`Debug`] trait for better debug
+//! outputs and the [`Iterator`] trait, which allows the RAM machine to be used
+//! as an iterator, with each step yielding a [`RamState`].
+//!
+//! [`RamState`] is a struct that holds a snapshot of the RAM machine's state.
+//! It is used to track the RAM machine's state at different points in time. It
+//! can be created from a `Ram` instance or a reference to a `Ram` instance
+//! using the [`From`] trait. It also provides a [`RamState::create_ram()`]
+//! method to create a new [`Ram`] instance from a [`RamState`].
+//!
+//! # Examples
+//!
+//! ```
+//! use ram::program::Program;
+//! use ram::ram::Ram;
+//! use ram::stmt::{Stmt, Value};
+//! use std::io::BufReader;
+//! use std::io::BufWriter;
+//!
+//! let program = Program::from(vec![
+//!   Stmt::Load(Value::Pure(2), 1),
+//!   Stmt::Add(Value::Pure(2), 3),
+//!   Stmt::Output(Value::Pure(0), 4),
+//!   Stmt::Halt(5),
+//! ]);
+//!
+//! let reader = BufReader::new(std::io::empty());
+//! let writer = BufWriter::new(std::io::sink());
+//! let mut ram = Ram::new(program, Box::new(reader), Box::new(writer));
+//!
+//! ram.run().unwrap();
+//! assert_eq!(ram.get_registers().get(0), 3);
+//! ```
+//!
+//! This module enables the creation of a RAM machine and provides the necessary functionalities to execute, debug, and manage its state.
 use std::fmt::Debug;
 use std::fmt::Formatter;
 use std::io::BufRead;
@@ -10,6 +66,9 @@ use crate::stmt::RegisterValue;
 use crate::stmt::Stmt;
 use crate::stmt::Value;
 
+/// The [`Ram`] struct represents a Random Access Machine (RAM).
+///
+/// It holds the program, registers, program counter, line number, halt state, error state, input reader, and output writer.
 pub struct Ram {
   program: Program,
   registers: Registers<i64>,
@@ -22,6 +81,7 @@ pub struct Ram {
 }
 
 impl Ram {
+  /// Creates a new [`Ram`] instance with the given program, input reader, and output writer.
   #[inline]
   pub fn new(program: Program, reader: Box<dyn BufRead>, writer: Box<dyn Write>) -> Self {
     Ram {
@@ -36,16 +96,19 @@ impl Ram {
     }
   }
 
+  /// Returns a reference to the registers of the [`Ram`] instance.
   #[inline]
   pub fn get_registers(&self) -> &Registers<i64> {
     &self.registers
   }
 
+  /// Returns the current instruction of the program as an [`Option<Stmt>`].
   #[inline]
   pub fn get_current_instruction(&self) -> Option<Stmt> {
     self.program.get(self.pc).cloned()
   }
 
+  /// Runs the program until it halts or encounters an error.
   pub fn run(&mut self) -> Result<(), InterpretError> {
     while !self.halt {
       self.step()?;
@@ -53,6 +116,7 @@ impl Ram {
     Ok(())
   }
 
+  /// Executes one step of the program and advances the program counter.
   pub fn step(&mut self) -> Result<(), InterpretError> {
     let result = self.eval_current();
     if let Ok(next_pc) = result {
@@ -63,11 +127,14 @@ impl Ram {
     result.map(|_| ())
   }
 
+  /// Returns the current error state of the [`Ram`] instance as an
+  /// [`Option<InterpretError>`].
   #[inline]
   pub fn get_error(&self) -> Option<InterpretError> {
     self.error.clone()
   }
 
+  /// Evaluates the given statement without affecting the program counter.
   #[inline]
   pub fn eval(&mut self, stmt: Stmt) -> Result<(), InterpretError> {
     let inject_into = self.pc;
@@ -230,6 +297,7 @@ impl Iterator for Ram {
   }
 }
 
+/// The [`RamState`] struct represents a snapshot of a RAM machine's state.
 #[derive(Default, Debug, Clone)]
 pub struct RamState {
   pub program: Program,
@@ -241,6 +309,7 @@ pub struct RamState {
 }
 
 impl From<Ram> for RamState {
+  /// Creates a [`RamState`] instance from a given [`Ram`] instance.
   fn from(ram: Ram) -> Self {
     Self {
       program: ram.program,
@@ -254,6 +323,7 @@ impl From<Ram> for RamState {
 }
 
 impl From<&Ram> for RamState {
+  /// Creates a [`RamState`] instance from a reference to a [`Ram`] instance.
   fn from(ram: &Ram) -> Self {
     Self {
       program: ram.program.clone(),
@@ -267,6 +337,7 @@ impl From<&Ram> for RamState {
 }
 
 impl RamState {
+  /// Creates a new [`Ram`] instance from the given [`RamState`], input reader, and output writer.
   pub fn create_ram(self, reader: Box<dyn BufRead>, writer: Box<dyn Write>) -> Ram {
     Ram {
       program: self.program,
