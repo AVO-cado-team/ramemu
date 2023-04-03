@@ -1,6 +1,6 @@
 # RAM Emulator
 
-![Version 0.1.2](https://img.shields.io/badge/version-0.1.2-blue.svg)
+![Version 0.1.3](https://img.shields.io/badge/version-0.1.3-blue.svg)
 [![License](https://img.shields.io/badge/license-GNU3-blue.svg)](./LICENSE)
 [![Ddystopia](https://img.shields.io/badge/Author-Ddystopia-blue.svg?style=flat)](mailto:alexanderbabak@proton.me)
 [![Ddystopia](https://img.shields.io/badge/Github-Ddystopia-green.svg?style=flat)](https://github.com/Ddystopia/)
@@ -14,7 +14,8 @@ support for mathematical operations, labels, jumps, and I/O operations.
 - Parsing of RAM assembly code
 - Mathematical operations: `ADD`, `SUB`, `MUL`, `DIV`
 - Labels and jumps: `JUMP`, `JMP`, `JZ`, `JZERO`, `JGZ`, `JGTZ`
-- I/O operations: `LOAD`, `STORE`, `INPUT`, `READ`, `WRITE`, `OUTPUT`
+- Move operations: `LOAD`, `STORE`
+- I/O operations: `INPUT`, `READ`, `WRITE`, `OUTPUT`
 - Error handling and reporting: `ParseError`, `InterpretError`
 
 ## Installation and Usage
@@ -23,7 +24,7 @@ Add the library as a dependency to your Rust project by including the following
 in your `Cargo.toml` file:
 
 ```toml
-ram = { git = "https://github.com/AVO-cado-team/ramemu.git", tag = "0.1.2"}
+ramemu = { git = "https://github.com/AVO-cado-team/ramemu.git", tag = "0.1.3"}
 ```
 
 ## Examples
@@ -32,22 +33,27 @@ Here's an example of how to use the library to create a RAM program and run it:
 
 ```rust
 
-use ram::{create_program, ram::Ram};
+use std::io::{stdin, stdout, BufReader};
+
+use ramemu::{program::Program, ram::Ram};
 
 fn main() {
-    let source = r#"
-      # Your RAM assembly code here
+  let source = r#"
+      # Your RAM assembly code here 
       HALT
     "#;
 
-    let program = create_program(source).unwrap();
-    let mut ram = Ram::new(program);
+  let program = Program::from_source(source).unwrap();
+  let mut ram = Ram::new(
+    program,
+    Box::new(BufReader::new(stdin())),
+    Box::new(stdout()),
+  );
 
-    match ram.run() {
-        Ok(_) => println!("Program executed successfully"),
-        Err(e) => println!("Error during execution: {:?}", e),
-    }
-
+  match ram.run() {
+    Ok(_) => println!("Program executed successfully"),
+    Err(e) => println!("Error during execution: {:?}", e),
+  }
 }
 
 ```
