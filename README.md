@@ -14,7 +14,8 @@ support for mathematical operations, labels, jumps, and I/O operations.
 - Parsing of RAM assembly code
 - Mathematical operations: `ADD`, `SUB`, `MUL`, `DIV`
 - Labels and jumps: `JUMP`, `JMP`, `JZ`, `JZERO`, `JGZ`, `JGTZ`
-- I/O operations: `LOAD`, `STORE`, `INPUT`, `READ`, `WRITE`, `OUTPUT`
+- Move operations: `LOAD`, `STORE`
+- I/O operations: `INPUT`, `READ`, `WRITE`, `OUTPUT`
 - Error handling and reporting: `ParseError`, `InterpretError`
 
 ## Installation and Usage
