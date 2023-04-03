@@ -20,7 +20,8 @@
 //! assembly language interpreter or compiler.
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+// use std::collections::HashMap;
+use rustc_hash::FxHashMap as HashMap;
 use std::fmt::Debug;
 use std::iter::FromIterator;
 

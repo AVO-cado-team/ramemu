@@ -86,7 +86,7 @@ pub enum Stmt {
   /// Outputs value to `writer`
   Output(Value, usize),
   /// Represents label
-  Label(String, usize),
+  Label(Label, usize),
   /// Halts program
   Halt(usize),
 }
@@ -145,18 +145,20 @@ pub enum RegisterValue {
 }
 
 /// Represent label
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Label(String);
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct Label(usize);
 
-impl Label {
-  /// Creates new label
+impl From<usize> for Label {
   #[inline]
-  pub fn new(label: String) -> Self {
+  fn from(label: usize) -> Self {
     Label(label)
   }
-  /// Get label as string
+}
+
+impl From<Label> for usize {
   #[inline]
-  pub fn get(&self) -> &str {
-    &self.0
+  fn from(label: Label) -> Self {
+    label.0
   }
 }
+
