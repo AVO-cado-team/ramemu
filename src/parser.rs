@@ -1,3 +1,8 @@
+//! The `parser` module is responsible for parsing the source code of the
+//! assembly language into a statements. It provides methods for parsing
+//! individual lines of source code as well as entire programs.
+//!
+
 use crate::errors::ParseError;
 
 use crate::stmt::Label;
@@ -5,6 +10,10 @@ use crate::stmt::RegisterValue;
 use crate::stmt::Stmt;
 use crate::stmt::Value;
 
+/// Parses the source code and returns an iterator over [`Result<Stmt, ParseError>`].
+///
+/// This function processes each line of the source code, parsing it into a [`Stmt`] or
+/// a [`ParseError`] if an error occurs. It skips empty lines and comments.
 pub fn parse(source: &str) -> impl Iterator<Item = Result<Stmt, ParseError>> + '_ {
   source
     .lines()
@@ -14,6 +23,12 @@ pub fn parse(source: &str) -> impl Iterator<Item = Result<Stmt, ParseError>> + '
     .filter_map(|result| result.transpose())
 }
 
+/// Parses a single line of source code and returns a [`Result`] containing an [`Option<Stmt>`]
+/// or a [`ParseError`].
+///
+/// This function processes a single line of source code, returning `None` for empty lines
+/// or lines containing only comments. If the line contains an instruction or label, it returns
+/// a [`Stmt`] wrapped in a `Some`. In case of a parsing error, it returns a [`ParseError`]
 pub fn parse_line(source: &str, line: usize) -> Result<Option<Stmt>, ParseError> {
   let facts: Vec<_> = source
     .split('#')
@@ -135,6 +150,10 @@ fn parse_with_label(head: &str, tail: &str, line: usize) -> Result<Stmt, ParseEr
   }
 }
 
+/// Checks if the given string is a valid label.
+///
+/// A valid label must start with an ASCII alphabetic character or an underscore,
+/// and can contain ASCII alphanumeric characters, underscores, or digits.
 fn is_valid_label(label: &str) -> bool {
   let Some(first) = label.chars().next() else { return false };
 
