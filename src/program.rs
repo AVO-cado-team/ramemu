@@ -1,3 +1,6 @@
+//! The [`Program`] module represents a program in the assembly language. It contains
+//! the instructions and labels of the program, and provides methods for creating,
+//! modifying, and querying the program structure.
 use std::collections::HashMap;
 
 use crate::{
@@ -7,6 +10,10 @@ use crate::{
 };
 
 /// Represents a program code.
+///
+/// The [`Program`] struct contains the instructions and labels of a program,
+/// and provides methods for creating, modifying, and querying the program
+/// structure.
 #[derive(Default, Debug, Clone)]
 pub struct Program {
   /// Instructions of the program.
@@ -16,8 +23,10 @@ pub struct Program {
 }
 
 impl Program {
-  /// Creates a new [`Program`] from the vector of [`Stmt`]
-  pub fn new(instructions: Vec<Stmt>) -> Self {
+  /// Creates a new [`Program`] from the vector of [`Stmt`].
+  ///
+  /// This method initializes the labels in the program.
+  pub fn from(instructions: Vec<Stmt>) -> Self {
     let mut p = Program {
       instructions,
       labels: HashMap::new(),
@@ -27,14 +36,19 @@ impl Program {
   }
 
   /// Creates a new [`Program`] from the source code.
+  ///
+  /// This method parses the source code, creating a [`Program`] with the resulting
+  /// instructions and labels.
   pub fn from_source(source: &str) -> Result<Program, ParseError> {
     let stmts: Result<Vec<Stmt>, ParseError> = parser::parse(source).collect();
     let stmts = stmts?;
 
-    Ok(Program::new(stmts))
+    Ok(Program::from(stmts))
   }
 
   /// Initializes labels of the program.
+  ///
+  /// This method updates the internal label mapping based on the current instructions.
   #[inline]
   pub fn init_labels(&mut self) {
     self.labels.clear();
@@ -45,13 +59,18 @@ impl Program {
     }
   }
 
-  /// Returns the insturction at given index
+
+  /// Returns the instruction at the given index.
+  ///
+  /// If the index is out of bounds, returns `None`.
   #[inline]
   pub fn get(&self, index: usize) -> Option<&Stmt> {
     self.instructions.get(index)
   }
 
   /// Decodes the label into the instruction index.
+  ///
+  /// If the label is not found, returns `None`.
   #[inline]
   pub fn decode_label(&self, label: &Label) -> Option<usize> {
     self.labels.get(label.get()).copied()
