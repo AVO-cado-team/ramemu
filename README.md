@@ -1,6 +1,6 @@
 # RAM Emulator
 
-![Version 0.1.4](https://img.shields.io/badge/version-0.1.3-blue.svg)
+![Version 0.1.4](https://img.shields.io/badge/version-0.1.4-blue.svg)
 [![License](https://img.shields.io/badge/license-GNU3-blue.svg)](./LICENSE)
 [![Oleksandr Babak](https://img.shields.io/badge/Author-Oleksandr%20Babak-blue.svg?style=flat)](mailto:alexanderbabak@proton.me)
 [![Ddystopia](https://img.shields.io/badge/Github-Ddystopia-green.svg?style=flat)](https://github.com/Ddystopia/)
