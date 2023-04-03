@@ -23,7 +23,7 @@ Add the library as a dependency to your Rust project by including the following
 in your `Cargo.toml` file:
 
 ```toml
-ram = { git = "https://github.com/AVO-cado-team/ramemu.git", tag = "0.1.3"}
+ramemu = { git = "https://github.com/AVO-cado-team/ramemu.git", tag = "0.1.3"}
 ```
 
 ## Examples
@@ -34,7 +34,7 @@ Here's an example of how to use the library to create a RAM program and run it:
 
 use std::io::{stdin, stdout, BufReader};
 
-use ram::{program::Program, ram::Ram};
+use ramemu::{program::Program, ram::Ram};
 
 fn main() {
   let source = r#"
