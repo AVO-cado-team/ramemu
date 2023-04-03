@@ -1,7 +1,7 @@
 //! The [`Program`] module represents a program in the assembly language. It contains
 //! the instructions and labels of the program, and provides methods for creating,
 //! modifying, and querying the program structure.
-use std::collections::HashMap;
+use rustc_hash::FxHashMap as HashMap;
 
 use crate::{
   errors::ParseError,
@@ -29,7 +29,7 @@ impl Program {
   pub fn from(instructions: Vec<Stmt>) -> Self {
     let mut p = Program {
       instructions,
-      labels: HashMap::new(),
+      labels: HashMap::default(),
     };
     p.init_labels();
     p
