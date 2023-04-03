@@ -12,7 +12,7 @@ pub enum InterpretError {
     /// Occurs when a division by zero is attempted.
     DivisionByZero(usize),
     /// Occurs when there is an error writing to provided writer.
-    IOError(usize),
+    WriteError(usize),
     /// Occurs when the program is halted but step was made.
     Halted(usize),
 }

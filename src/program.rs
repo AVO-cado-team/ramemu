@@ -2,7 +2,7 @@
 //! the instructions and labels of the program, and provides methods for creating,
 //! modifying, and querying the program structure.
 // use std::collections::HashMap;
-use rustc_hash::FxHashMap as HashMap;
+use std::collections::HashMap;
 
 use crate::{
   errors::ParseError,
