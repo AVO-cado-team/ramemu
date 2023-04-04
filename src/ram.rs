@@ -201,8 +201,7 @@ impl Ram {
       }
       Stmt::Output(value, _) => {
         let value = self.get_with_value(value)?;
-        writeln!(&mut self.writer, "{}", value)
-          .map_err(|_| InterpretError::IOError(self.line))?
+        writeln!(&mut self.writer, "{}", value).map_err(|_| InterpretError::IOError(self.line))?
       }
       Stmt::Input(value, _) => {
         let mut input = String::new();
@@ -213,7 +212,7 @@ impl Ram {
         let index: usize = self
           .get_with_register(&value.clone())?
           .try_into()
-          .map_err(|_| InterpretError::SegmentationFault(self.line))?;
+          .map_err(|_| InterpretError::InvalidInput(self.line))?;
         self.registers.set(
           index,
           input

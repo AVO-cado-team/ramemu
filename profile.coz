@@ -1,0 +1,40 @@
+startup	time=1680601535783131066
+runtime	time=22861440185
+startup	time=1680601578381510096
+experiment	selected=/cargo/registry/src/github.com-1ecc6299db9ec823/hashbrown-0.12.3/src/raw/mod.rs:1177	speedup=0.00	duration=500067027	selected-samples=0
+latency-point	name=Registers::get	arrivals=8615206	departures=8615206	difference=2640
+runtime	time=8686408188
+samples	location=/cargo/registry/src/github.com-1ecc6299db9ec823/hashbrown-0.12.3/src/map.rs:1267	count=1
+samples	location=/cargo/registry/src/github.com-1ecc6299db9ec823/hashbrown-0.12.3/src/map.rs:1674	count=2
+samples	location=/cargo/registry/src/github.com-1ecc6299db9ec823/hashbrown-0.12.3/src/map.rs:1683	count=3
+samples	location=/cargo/registry/src/github.com-1ecc6299db9ec823/hashbrown-0.12.3/src/raw/bitmask.rs:57	count=2
+samples	location=/cargo/registry/src/github.com-1ecc6299db9ec823/hashbrown-0.12.3/src/raw/mod.rs:145	count=3
+samples	location=/cargo/registry/src/github.com-1ecc6299db9ec823/hashbrown-0.12.3/src/raw/mod.rs:816	count=6
+samples	location=/cargo/registry/src/github.com-1ecc6299db9ec823/hashbrown-0.12.3/src/raw/mod.rs:1177	count=1
+samples	location=/cargo/registry/src/github.com-1ecc6299db9ec823/hashbrown-0.12.3/src/raw/mod.rs:1179	count=1
+samples	location=/home/ddystopia/.cargo/registry/src/github.com-1ecc6299db9ec823/coz-0.1.3/src/lib.rs:201	count=6
+samples	location=/home/ddystopia/.cargo/registry/src/github.com-1ecc6299db9ec823/coz-0.1.3/src/lib.rs:210	count=86
+samples	location=/home/ddystopia/code/ramemu/src/program.rs:77	count=1
+samples	location=/home/ddystopia/code/ramemu/src/ram.rs:0	count=1
+samples	location=/home/ddystopia/code/ramemu/src/ram.rs:122	count=1
+samples	location=/home/ddystopia/code/ramemu/src/ram.rs:123	count=1
+samples	location=/home/ddystopia/code/ramemu/src/ram.rs:147	count=4
+samples	location=/home/ddystopia/code/ramemu/src/ram.rs:159	count=3
+samples	location=/home/ddystopia/code/ramemu/src/ram.rs:164	count=1
+samples	location=/home/ddystopia/code/ramemu/src/ram.rs:187	count=1
+samples	location=/home/ddystopia/code/ramemu/src/ram.rs:229	count=1
+samples	location=/home/ddystopia/code/ramemu/src/ram.rs:232	count=3
+samples	location=/home/ddystopia/code/ramemu/src/ram.rs:238	count=1
+samples	location=/home/ddystopia/code/ramemu/src/ram.rs:254	count=1
+samples	location=/home/ddystopia/code/ramemu/src/ram.rs:256	count=1
+samples	location=/home/ddystopia/code/ramemu/src/ram.rs:273	count=2
+samples	location=/home/ddystopia/code/ramemu/src/registers.rs:69	count=1
+samples	location=/home/ddystopia/code/ramemu/src/registers.rs:71	count=1
+samples	location=/home/ddystopia/code/ramemu/src/stmt.rs:98	count=3
+samples	location=/rustc/9eb3afe9ebe9c7d2b84b71002d44f4a0edac95e0/library/core/src/cell.rs:1683	count=2
+samples	location=/rustc/9eb3afe9ebe9c7d2b84b71002d44f4a0edac95e0/library/core/src/num/uint_macros.rs:1226	count=1
+samples	location=/rustc/9eb3afe9ebe9c7d2b84b71002d44f4a0edac95e0/library/core/src/option.rs:675	count=7
+samples	location=/rustc/9eb3afe9ebe9c7d2b84b71002d44f4a0edac95e0/library/core/src/ptr/mod.rs:1354	count=3
+samples	location=/rustc/9eb3afe9ebe9c7d2b84b71002d44f4a0edac95e0/library/core/src/result.rs:858	count=1
+samples	location=/rustc/9eb3afe9ebe9c7d2b84b71002d44f4a0edac95e0/library/core/src/slice/index.rs:219	count=2
+samples	location=/rustc/9eb3afe9ebe9c7d2b84b71002d44f4a0edac95e0/library/stdarch/crates/core_arch/src/x86/sse2.rs:1381	count=6
