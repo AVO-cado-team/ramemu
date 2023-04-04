@@ -123,7 +123,7 @@ impl Stmt {
 pub enum Value {
   /// Represents a pure numeric value, indicated by an equal sign (`=`) before the number.
   /// For example, `LOAD =5` loads the pure numeric value `5` into register 0.
-  Pure(usize),
+  Pure(isize),
   /// Represents the value stored in a specific register.
   // /// For example, `LOAD 5` loads the value stored in register 5 into register 0.
   Register(RegisterValue),
