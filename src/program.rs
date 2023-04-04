@@ -77,9 +77,9 @@ impl Program {
         .find(|id| !labels_idx.iter().any(|(_, id2)| *id2 == **id))
         .expect("There is some extra label, but I can't find it.");
       let bad_line = self.instructions.iter().find(|stmt| match stmt {
-        Stmt::Jump(id, _) => usize::from(*id) == *bad_id,
-        Stmt::JumpIfZero(id, _) => usize::from(*id) == *bad_id,
-        Stmt::JumpGreatherZero(id, _) => usize::from(*id) == *bad_id,
+        Stmt::Jump(id, _) | Stmt::JumpIfZero(id, _) | Stmt::JumpGreatherZero(id, _) => {
+          usize::from(*id) == *bad_id
+        }
         _ => false,
       });
       return Err(ParseError::LabelIsNotValid(bad_line.unwrap().get_line()));
