@@ -230,7 +230,9 @@ impl Ram {
   #[inline]
   fn get_with_value(&self, value: &Value) -> Result<i64, InterpretError> {
     match value {
-      Value::Pure(index) => self.get::<0>(*index),
+      Value::Pure(index) => (*index)
+        .try_into()
+        .map_err(|_| InterpretError::SegmentationFault(self.line)),
       Value::Register(RegisterValue::Direct(index)) => self.get::<1>(*index),
       Value::Register(RegisterValue::Indirect(index)) => self.get::<2>(*index),
     }
