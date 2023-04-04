@@ -161,7 +161,7 @@ impl Ram {
       Stmt::Load(value, _) => self.set_first(self.get_with_value(value)?),
       Stmt::Store(value, _) => {
         let index: usize = self
-          .get_with_register(&value.clone())?
+          .get_with_register(value)?
           .try_into()
           .map_err(|_| InterpretError::SegmentationFault(self.line))?;
         self.registers.set(index, self.first());
@@ -210,15 +210,15 @@ impl Ram {
           .read_line(&mut input)
           .map_err(|_| InterpretError::IOError(self.line))?;
         let index: usize = self
-          .get_with_register(&value.clone())?
+          .get_with_register(value)?
           .try_into()
-          .map_err(|_| InterpretError::InvalidInput(self.line))?;
+          .map_err(|_| InterpretError::SegmentationFault(self.line))?;
         self.registers.set(
           index,
           input
             .trim()
             .parse()
-            .map_err(|_| InterpretError::SegmentationFault(self.line))?,
+            .map_err(|_| InterpretError::InvalidInput(self.line, input))?,
         );
       }
       Stmt::Halt(_) => self.halt = true,
