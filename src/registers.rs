@@ -19,8 +19,8 @@
 //! This module is typically used in combination with other components of an
 //! assembly language interpreter or compiler.
 
-use std::cell::RefCell;
 use rustc_hash::FxHashMap as HashMap;
+use std::cell::RefCell;
 use std::fmt::Debug;
 use std::iter::FromIterator;
 
@@ -63,8 +63,12 @@ impl<T: Clone + Default> Registers<T> {
   /// ```
   #[inline]
   pub fn get(&self, index: usize) -> T {
-    let mut map = self.registers.borrow_mut();
-    map.entry(index).or_default().clone()
+    let value = {
+      let mut map = self.registers.borrow_mut();
+      let value = map.entry(index).or_insert_with(T::default);
+      value.clone()
+    };
+    value
   }
   /// Sets the value of the register at the given index.
   ///
