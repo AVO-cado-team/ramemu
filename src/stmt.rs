@@ -1,5 +1,5 @@
 //! Stmt module defines the [`Stmt`] enum, which represents the various statements
-//! in the RAM assembly language, as well as related types [`Value`], 
+//! in the RAM assembly language, as well as related types [`Value`],
 //! [`RegisterValue`], and [`Label`].
 //!
 //! The [`Stmt`] enum contains variants for each of the supported assembly language statements,
@@ -96,19 +96,19 @@ impl Stmt {
   #[inline]
   pub fn get_line(&self) -> usize {
     match self {
-      Stmt::Load(_, line) => *line,
-      Stmt::Store(_, line) => *line,
-      Stmt::Add(_, line) => *line,
-      Stmt::Sub(_, line) => *line,
-      Stmt::Mul(_, line) => *line,
-      Stmt::Div(_, line) => *line,
-      Stmt::Jump(_, line) => *line,
-      Stmt::JumpIfZero(_, line) => *line,
-      Stmt::JumpGreatherZero(_, line) => *line,
-      Stmt::Input(_, line) => *line,
-      Stmt::Output(_, line) => *line,
-      Stmt::Label(_, line) => *line,
-      Stmt::Halt(line) => *line,
+      Stmt::Load(_, line)
+      | Stmt::Store(_, line)
+      | Stmt::Add(_, line)
+      | Stmt::Sub(_, line)
+      | Stmt::Mul(_, line)
+      | Stmt::Div(_, line)
+      | Stmt::Jump(_, line)
+      | Stmt::JumpIfZero(_, line)
+      | Stmt::JumpGreatherZero(_, line)
+      | Stmt::Input(_, line)
+      | Stmt::Output(_, line)
+      | Stmt::Label(_, line)
+      | Stmt::Halt(line) => *line,
     }
   }
 }
