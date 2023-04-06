@@ -3,7 +3,7 @@
 //! individual lines of source code as well as entire programs.
 //!
 
-use std::collections::HashMap;
+use rustc_hash::FxHashMap as HashMap;
 use crate::errors::ParseError;
 
 use crate::stmt::Label;

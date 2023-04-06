@@ -161,7 +161,7 @@ impl Ram {
       Stmt::Load(value, _) => self.set_first(self.get_with_value(value)?),
       Stmt::Store(value, _) => {
         let index: usize = self
-          .get_with_register(&value.clone())?
+          .get_with_register(value)?
           .try_into()
           .map_err(|_| InterpretError::SegmentationFault(self.line))?;
         self.registers.set(index, self.first());
@@ -201,15 +201,14 @@ impl Ram {
       }
       Stmt::Output(value, _) => {
         let value = self.get_with_value(value)?;
-        writeln!(&mut self.writer, "{}", value)
-          .map_err(|_| InterpretError::WriteError(self.line))?
+        writeln!(&mut self.writer, "{}", value).map_err(|_| InterpretError::IOError(self.line))?
       }
       Stmt::Input(value, _) => {
         let mut input = String::new();
         self
           .reader
           .read_line(&mut input)
-          .map_err(|_| InterpretError::InvalidInput(self.line, input.clone()))?;
+          .map_err(|_| InterpretError::IOError(self.line))?;
         let index: usize = self
           .get_with_register(value)?
           .try_into()
@@ -231,7 +230,9 @@ impl Ram {
   #[inline]
   fn get_with_value(&self, value: &Value) -> Result<i64, InterpretError> {
     match value {
-      Value::Pure(index) => self.get::<0>(*index),
+      Value::Pure(index) => (*index)
+        .try_into()
+        .map_err(|_| InterpretError::SegmentationFault(self.line)),
       Value::Register(RegisterValue::Direct(index)) => self.get::<1>(*index),
       Value::Register(RegisterValue::Indirect(index)) => self.get::<2>(*index),
     }
