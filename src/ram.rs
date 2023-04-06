@@ -201,7 +201,7 @@ impl Ram {
       }
       Stmt::Output(value, _) => {
         let value = self.get_with_value(value)?;
-        writeln!(&mut self.writer, "{}", value).map_err(|_| InterpretError::IOError(self.line))?
+        write!(&mut self.writer, "{}", value).map_err(|_| InterpretError::IOError(self.line))?
       }
       Stmt::Input(value, _) => {
         let mut input = String::new();
