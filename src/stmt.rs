@@ -72,7 +72,7 @@ pub enum Stmt {
   /// Subtracts value from register `0`
   Sub(Value, usize),
   /// Multiplies value with register `0`
-  Mul(Value, usize),
+  Mult(Value, usize),
   /// Divides register `0` by value
   Div(Value, usize),
   /// Jumps to label
@@ -100,7 +100,7 @@ impl Stmt {
       | Stmt::Store(_, line)
       | Stmt::Add(_, line)
       | Stmt::Sub(_, line)
-      | Stmt::Mul(_, line)
+      | Stmt::Mult(_, line)
       | Stmt::Div(_, line)
       | Stmt::Jump(_, line)
       | Stmt::JumpIfZero(_, line)
