@@ -138,9 +138,9 @@ impl Ram {
   #[inline]
   pub fn eval(&mut self, stmt: Stmt) -> Result<(), InterpretError> {
     let inject_into = self.pc;
-    self.program.inject_instruction(stmt, inject_into);
+    self.program.inject_instruction(stmt, inject_into)?;
     let _next_pc = self.eval_current()?;
-    self.program.remove_instruction(inject_into);
+    self.program.remove_instruction(inject_into)?;
     Ok(())
   }
 
