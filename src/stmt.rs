@@ -145,20 +145,6 @@ pub enum RegisterValue {
 }
 
 /// Represent label
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct Label(usize);
+pub type Label = usize;
 
-impl From<usize> for Label {
-  #[inline]
-  fn from(label: usize) -> Self {
-    Label(label)
-  }
-}
-
-impl From<Label> for usize {
-  #[inline]
-  fn from(label: Label) -> Self {
-    label.0
-  }
-}
 

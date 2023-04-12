@@ -3,8 +3,8 @@
 //! individual lines of source code as well as entire programs.
 //!
 
-use rustc_hash::FxHashMap as HashMap;
 use crate::errors::ParseError;
+use rustc_hash::FxHashMap as HashMap;
 
 use crate::stmt::Label;
 use crate::stmt::RegisterValue;
@@ -60,7 +60,7 @@ pub fn parse_line(
     if is_valid_label(label) {
       let len = label_ids.len();
       let id = *label_ids.entry(label.to_string()).or_insert(len);
-      return Ok(Some(Stmt::Label(Label::from(id), line)));
+      return Ok(Some(Stmt::Label(id, line)));
     }
     Err(ParseError::LabelIsNotValid(line))?
   }
@@ -156,7 +156,7 @@ fn parse_with_label(
     let label = tail;
     let len = label_ids.len();
     let id = label_ids.entry(label.to_string()).or_insert(len);
-    Label::from(*id)
+    *id
   } else {
     Err(ParseError::LabelIsNotValid(line))?
   };
