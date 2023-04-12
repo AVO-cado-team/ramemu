@@ -68,7 +68,7 @@ pub fn parse_line(
   let opcode = head.to_uppercase();
 
   let stmt = match opcode.as_str() {
-    "LOAD" | "ADD" | "SUB" | "MUL" | "DIV" | "WRITE" | "OUTPUT" => parse_with_value(
+    "LOAD" | "ADD" | "SUB" | "MULT" | "MUL" | "DIV" | "WRITE" | "OUTPUT" => parse_with_value(
       &opcode,
       tail.ok_or(ParseError::ArgumentIsRequired(line))?,
       line,
@@ -140,7 +140,8 @@ fn parse_with_value(head: &str, tail: &str, line: usize) -> Result<Stmt, ParseEr
     "OUTPUT" | "WRITE" => Ok(Stmt::Output(arg, line)),
     "ADD" => Ok(Stmt::Add(arg, line)),
     "SUB" => Ok(Stmt::Sub(arg, line)),
-    "MUL" => Ok(Stmt::Mul(arg, line)),
+    "MUL" => Ok(Stmt::Mult(arg, line)),
+    "MULT" => Ok(Stmt::Mult(arg, line)),
     "DIV" => Ok(Stmt::Div(arg, line)),
     _ => unreachable!("Opcodes were chenged in parse function, but not there"),
   }
