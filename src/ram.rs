@@ -32,9 +32,9 @@
 //! # Examples
 //!
 //! ```
-//! use ram::program::Program;
-//! use ram::ram::Ram;
-//! use ram::stmt::{Stmt, Value};
+//! use ramemu::program::Program;
+//! use ramemu::ram::Ram;
+//! use ramemu::stmt::{Stmt, Value};
 //! use std::io::BufReader;
 //! use std::io::BufWriter;
 //!
@@ -50,7 +50,7 @@
 //! let mut ram = Ram::new(program, Box::new(reader), Box::new(writer));
 //!
 //! ram.run().unwrap();
-//! assert_eq!(ram.get_registers().get(0), 3);
+//! assert_eq!(ram.get_registers().get(0), 4);
 //! ```
 //!
 //! This module enables the creation of a RAM machine and provides the necessary functionalities to execute, debug, and manage its state.
@@ -138,9 +138,9 @@ impl Ram {
   #[inline]
   pub fn eval(&mut self, stmt: Stmt) -> Result<(), InterpretError> {
     let inject_into = self.pc;
-    self.program.inject_instruction(stmt, inject_into);
+    self.program.inject_instruction(stmt, inject_into)?;
     let _next_pc = self.eval_current()?;
-    self.program.remove_instruction(inject_into);
+    self.program.remove_instruction(inject_into)?;
     Ok(())
   }
 
@@ -180,14 +180,14 @@ impl Ram {
       Stmt::Jump(label, _) => {
         next_pc = self
           .program
-          .decode_label(label)
+          .decode_label(*label)
           .ok_or(InterpretError::UnknownLabel(self.line))?;
       }
       Stmt::JumpIfZero(label, _) => {
         if self.first() == 0 {
           next_pc = self
             .program
-            .decode_label(label)
+            .decode_label(*label)
             .ok_or(InterpretError::UnknownLabel(self.line))?;
         }
       }
@@ -195,7 +195,7 @@ impl Ram {
         if self.first() > 0 {
           next_pc = self
             .program
-            .decode_label(label)
+            .decode_label(*label)
             .ok_or(InterpretError::UnknownLabel(self.line))?;
         }
       }
@@ -218,7 +218,7 @@ impl Ram {
           input
             .trim()
             .parse()
-            .map_err(|_| InterpretError::InvalidInput(self.line, input))?,
+            .map_err(|_| InterpretError::InvalidInput(self.line, input.trim().to_string()))?,
         );
       }
       Stmt::Halt(_) => self.halt = true,

@@ -61,7 +61,7 @@
 
 /// Represents a statement in the program, along with its line number from the source code.
 /// Statements are the basic building blocks of a program and define the operations to be performed.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Stmt {
   /// Loads value into register `0`
   Load(Value, usize),
@@ -86,7 +86,7 @@ pub enum Stmt {
   /// Outputs value to `writer`
   Output(Value, usize),
   /// Represents label
-  Label(String, usize),
+  Label(Label, usize),
   /// Halts program
   Halt(usize),
 }
@@ -119,7 +119,7 @@ impl Stmt {
 /// Examples:
 /// - `LOAD =5`: Loads the pure numeric value `5` into register 0.
 /// - `LOAD 5`: Loads the value stored in register 5 into register 0.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Value {
   /// Represents a pure numeric value, indicated by an equal sign (`=`) before the number.
   /// For example, `LOAD =5` loads the pure numeric value `5` into register 0.
@@ -145,18 +145,6 @@ pub enum RegisterValue {
 }
 
 /// Represent label
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Label(String);
+pub type Label = usize;
 
-impl Label {
-  /// Creates new label
-  #[inline]
-  pub fn new(label: String) -> Self {
-    Label(label)
-  }
-  /// Get label as string
-  #[inline]
-  pub fn get(&self) -> &str {
-    &self.0
-  }
-}
+
