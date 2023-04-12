@@ -32,9 +32,9 @@
 //! # Examples
 //!
 //! ```
-//! use ram::program::Program;
-//! use ram::ram::Ram;
-//! use ram::stmt::{Stmt, Value};
+//! use ramemu::program::Program;
+//! use ramemu::ram::Ram;
+//! use ramemu::stmt::{Stmt, Value};
 //! use std::io::BufReader;
 //! use std::io::BufWriter;
 //!
@@ -50,7 +50,7 @@
 //! let mut ram = Ram::new(program, Box::new(reader), Box::new(writer));
 //!
 //! ram.run().unwrap();
-//! assert_eq!(ram.get_registers().get(0), 3);
+//! assert_eq!(ram.get_registers().get(0), 4);
 //! ```
 //!
 //! This module enables the creation of a RAM machine and provides the necessary functionalities to execute, debug, and manage its state.
@@ -201,7 +201,7 @@ impl Ram {
       }
       Stmt::Output(value, _) => {
         let value = self.get_with_value(value)?;
-        writeln!(&mut self.writer, "{}", value).map_err(|_| InterpretError::IOError(self.line))?
+        write!(&mut self.writer, "{}", value).map_err(|_| InterpretError::IOError(self.line))?
       }
       Stmt::Input(value, _) => {
         let mut input = String::new();
