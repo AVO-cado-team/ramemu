@@ -168,7 +168,7 @@ impl Ram {
       }
       Stmt::Add(value, _) => self.set_first(self.first() + self.get_with_value(value)?),
       Stmt::Sub(value, _) => self.set_first(self.first() - self.get_with_value(value)?),
-      Stmt::Mul(value, _) => self.set_first(self.first() * self.get_with_value(value)?),
+      Stmt::Mult(value, _) => self.set_first(self.first() * self.get_with_value(value)?),
       Stmt::Div(value, _) => {
         self.set_first(
           self
