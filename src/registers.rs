@@ -6,7 +6,7 @@
 //! # Examples
 //!
 //! ```
-//! use ram::registers::Registers;
+//! use ramemu::registers::Registers;
 //!
 //! let mut registers = Registers::default();
 //! registers.set(0, 42);
@@ -33,7 +33,7 @@ use std::iter::FromIterator;
 /// # Examples
 ///
 /// ```
-/// use ram::registers::Registers;
+/// use ramemu::registers::Registers;
 ///
 /// let mut registers = Registers::default();
 /// registers.set(0, 42);
@@ -56,7 +56,7 @@ impl<T: Clone + Default> Registers<T> {
   /// # Examples
   ///
   /// ```
-  /// use ram::registers::Registers;
+  /// use ramemu::registers::Registers;
   ///
   /// let registers: Registers<u8> = Registers::default();
   /// assert_eq!(registers.get(4), 0);
@@ -75,7 +75,7 @@ impl<T: Clone + Default> Registers<T> {
   /// # Examples
   ///
   /// ```
-  /// use ram::registers::Registers;
+  /// use ramemu::registers::Registers;
   ///
   /// let mut registers = Registers::default();
   /// registers.set(0, 42);
