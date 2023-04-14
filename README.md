@@ -12,10 +12,10 @@ support for mathematical operations, labels, jumps, and I/O operations.
 ## Features
 
 - Parsing of RAM assembly code
-- Mathematical operations: `ADD`, `SUB`, `MUL`, `DIV`
-- Labels and jumps: `JUMP`, `JMP`, `JZ`, `JZERO`, `JGZ`, `JGTZ`
+- Mathematical operations: `ADD`, `SUB`, `MULT` (`MUL`), `DIV`
+- Labels and jumps: `JMP` (`JUMP`), `JZ` (`JZERO`), `JGZ` (`JGTZ`)
 - Move operations: `LOAD`, `STORE`
-- I/O operations: `INPUT`, `READ`, `WRITE`, `OUTPUT`
+- I/O operations: `READ` (`INPUT`), `WRITE`, (`OUTPUT`)
 - Error handling and reporting: `ParseError`, `InterpretError`
 
 ## Installation and Usage
