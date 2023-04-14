@@ -20,7 +20,6 @@
 //! assembly language interpreter or compiler.
 
 use rustc_hash::FxHashMap as HashMap;
-use std::cell::RefCell;
 use std::fmt::Debug;
 use std::iter::FromIterator;
 
@@ -45,7 +44,7 @@ use std::iter::FromIterator;
 #[derive(Default, Clone, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct Registers<T> {
-  registers: RefCell<HashMap<usize, T>>,
+  registers: HashMap<usize, T>,
 }
 
 impl<T: Clone + Default> Registers<T> {
@@ -63,12 +62,11 @@ impl<T: Clone + Default> Registers<T> {
   /// ```
   #[inline]
   pub fn get(&self, index: usize) -> T {
-    let value = {
-      let mut map = self.registers.borrow_mut();
-      let value = map.entry(index).or_insert_with(T::default);
-      value.clone()
-    };
-    value
+    self
+      .registers
+      .get(&index)
+      .cloned()
+      .unwrap_or_default()
   }
   /// Sets the value of the register at the given index.
   ///
@@ -83,15 +81,15 @@ impl<T: Clone + Default> Registers<T> {
   /// ```
   #[inline]
   pub fn set(&mut self, index: usize, value: T) {
-    self.registers.get_mut().insert(index, value);
+    self.registers.insert(index, value);
   }
 }
 
 impl<T: Clone + Default + Debug> Debug for Registers<T> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    let max_index = *self.registers.borrow().keys().max().unwrap_or(&0);
+    let max_index = *self.registers.keys().max().unwrap_or(&0);
     let vec: Vec<T> = (0..=max_index)
-      .map(|i| self.registers.borrow().get(&i).cloned().unwrap_or_default())
+      .map(|i| self.registers.get(&i).cloned().unwrap_or_default())
       .collect();
     Debug::fmt(&vec, f)
   }
@@ -101,7 +99,7 @@ impl<T> FromIterator<T> for Registers<T> {
   #[inline]
   fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
     Registers {
-      registers: RefCell::new(iter.into_iter().enumerate().map(|(i, v)| (i, v)).collect()),
+      registers: iter.into_iter().enumerate().map(|(i, v)| (i, v)).collect(),
     }
   }
 }
@@ -110,7 +108,7 @@ impl<T> FromIterator<(usize, T)> for Registers<T> {
   #[inline]
   fn from_iter<I: IntoIterator<Item = (usize, T)>>(iter: I) -> Self {
     Registers {
-      registers: RefCell::new(iter.into_iter().collect()),
+      registers: iter.into_iter().collect(),
     }
   }
 }
