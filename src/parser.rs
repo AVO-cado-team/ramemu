@@ -4,6 +4,7 @@
 //!
 
 use crate::errors::ParseError;
+use rustc_hash::FxHashMap as HashMap;
 
 use crate::stmt::Label;
 use crate::stmt::RegisterValue;
@@ -14,12 +15,15 @@ use crate::stmt::Value;
 ///
 /// This function processes each line of the source code, parsing it into a [`Stmt`] or
 /// a [`ParseError`] if an error occurs. It skips empty lines and comments.
-pub fn parse(source: &str) -> impl Iterator<Item = Result<Stmt, ParseError>> + '_ {
+pub fn parse<'a>(
+  source: &'a str,
+  label_ids: &'a mut HashMap<String, usize>,
+) -> impl Iterator<Item = Result<Stmt, ParseError>> + 'a {
   source
     .lines()
     .enumerate()
     .map(|(i, l)| (i + 1, l.trim()))
-    .map(|(i, l)| parse_line(l, i))
+    .map(move |(i, l)| parse_line(l, i, label_ids))
     .filter_map(|result| result.transpose())
 }
 
@@ -29,7 +33,11 @@ pub fn parse(source: &str) -> impl Iterator<Item = Result<Stmt, ParseError>> + '
 /// This function processes a single line of source code, returning `None` for empty lines
 /// or lines containing only comments. If the line contains an instruction or label, it returns
 /// a [`Stmt`] wrapped in a `Some`. In case of a parsing error, it returns a [`ParseError`]
-pub fn parse_line(source: &str, line: usize) -> Result<Option<Stmt>, ParseError> {
+pub fn parse_line(
+  source: &str,
+  line: usize,
+  label_ids: &mut HashMap<String, usize>,
+) -> Result<Option<Stmt>, ParseError> {
   let facts: Vec<_> = source
     .split('#')
     .next()
@@ -50,7 +58,9 @@ pub fn parse_line(source: &str, line: usize) -> Result<Option<Stmt>, ParseError>
 
   if let Some(label) = head.strip_suffix(':') {
     if is_valid_label(label) {
-      return Ok(Some(Stmt::Label(label.to_string(), line)));
+      let len = label_ids.len();
+      let id = *label_ids.entry(label.to_string()).or_insert(len);
+      return Ok(Some(Stmt::Label(id, line)));
     }
     Err(ParseError::LabelIsNotValid(line))?
   }
@@ -58,7 +68,7 @@ pub fn parse_line(source: &str, line: usize) -> Result<Option<Stmt>, ParseError>
   let opcode = head.to_uppercase();
 
   let stmt = match opcode.as_str() {
-    "LOAD" | "ADD" | "SUB" | "MUL" | "DIV" | "WRITE" | "OUTPUT" => parse_with_value(
+    "LOAD" | "ADD" | "SUB" | "MULT" | "MUL" | "DIV" | "WRITE" | "OUTPUT" => parse_with_value(
       &opcode,
       tail.ok_or(ParseError::ArgumentIsRequired(line))?,
       line,
@@ -67,6 +77,7 @@ pub fn parse_line(source: &str, line: usize) -> Result<Option<Stmt>, ParseError>
       &opcode,
       tail.ok_or(ParseError::ArgumentIsRequired(line))?,
       line,
+      label_ids,
     )?,
     "STORE" | "INPUT" | "READ" => parse_with_register(
       &opcode,
@@ -129,15 +140,24 @@ fn parse_with_value(head: &str, tail: &str, line: usize) -> Result<Stmt, ParseEr
     "OUTPUT" | "WRITE" => Ok(Stmt::Output(arg, line)),
     "ADD" => Ok(Stmt::Add(arg, line)),
     "SUB" => Ok(Stmt::Sub(arg, line)),
-    "MUL" => Ok(Stmt::Mul(arg, line)),
+    "MUL" => Ok(Stmt::Mult(arg, line)),
+    "MULT" => Ok(Stmt::Mult(arg, line)),
     "DIV" => Ok(Stmt::Div(arg, line)),
     _ => unreachable!("Opcodes were chenged in parse function, but not there"),
   }
 }
 
-fn parse_with_label(head: &str, tail: &str, line: usize) -> Result<Stmt, ParseError> {
+fn parse_with_label(
+  head: &str,
+  tail: &str,
+  line: usize,
+  label_ids: &mut HashMap<String, usize>,
+) -> Result<Stmt, ParseError> {
   let label: Label = if is_valid_label(tail) {
-    Label::new(tail.to_string())
+    let label = tail;
+    let len = label_ids.len();
+    let id = label_ids.entry(label.to_string()).or_insert(len);
+    *id
   } else {
     Err(ParseError::LabelIsNotValid(line))?
   };

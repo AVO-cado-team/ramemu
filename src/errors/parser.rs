@@ -62,11 +62,12 @@ impl Error for ParseError {}
 mod tests {
   use super::*;
   use crate::parser::parse_line;
+  use std::collections::HashMap;
 
   #[test]
   fn test_label_is_not_valid() {
     let line = "фывфыфыв:";
-    let result = parse_line(line, 0);
+    let result = parse_line(line, 0, &mut HashMap::default());
 
     assert_eq!(result, Err(ParseError::LabelIsNotValid(0)));
   }
@@ -74,7 +75,7 @@ mod tests {
   #[test]
   fn test_unsupported_syntax() {
     let line = "LOAD 1 2";
-    let result = parse_line(line, 0);
+    let result = parse_line(line, 0, &mut HashMap::default());
 
     assert_eq!(result, Err(ParseError::UnsupportedSyntax(0)));
   }
@@ -82,7 +83,7 @@ mod tests {
   #[test]
   fn test_unsupported_opcode() {
     let line = "KoKotinf 1 2";
-    let result = parse_line(line, 0);
+    let result = parse_line(line, 0, &mut HashMap::default());
 
     assert_eq!(result, Err(ParseError::UnsupportedSyntax(0)));
   }
@@ -90,7 +91,7 @@ mod tests {
   #[test]
   fn test_argument_is_required() {
     let line = "LOAD";
-    let result = parse_line(line, 0);
+    let result = parse_line(line, 0, &mut HashMap::default());
 
     assert_eq!(result, Err(ParseError::ArgumentIsRequired(0)));
   }
@@ -98,7 +99,7 @@ mod tests {
   #[test]
   fn test_pure_argument_not_allowed() {
     let line = "STORE =1";
-    let result = parse_line(line, 0);
+    let result = parse_line(line, 0, &mut HashMap::default());
 
     assert_eq!(result, Err(ParseError::pure_argument_not_allowed(0)));
   }
@@ -106,7 +107,7 @@ mod tests {
   #[test]
   fn test_argument_value_must_be_numeric() {
     let line = "STORE *a";
-    let result = parse_line(line, 0);
+    let result = parse_line(line, 0, &mut HashMap::default());
 
     assert_eq!(result, Err(ParseError::argument_value_must_be_numeric(0)));
   }
@@ -114,7 +115,7 @@ mod tests {
   #[test]
   fn test_argument_is_not_valid() {
     let line = "STORE a";
-    let result = parse_line(line, 0);
+    let result = parse_line(line, 0, &mut HashMap::default());
 
     assert_eq!(result, Err(ParseError::not_valid_argument(0)));
   }
