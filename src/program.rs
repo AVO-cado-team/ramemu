@@ -18,7 +18,7 @@ use crate::{
 /// The [`Program`] struct contains the instructions and labels of a program,
 /// and provides methods for creating, modifying, and querying the program
 /// structure.
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct Program {
   /// Instructions of the program.
   pub instructions: Vec<Stmt>,

@@ -348,3 +348,118 @@ impl RamState {
     }
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use std::cell::RefCell;
+  use std::io::{Result as IoResult, Write};
+  use std::rc::Rc;
+
+  use super::*;
+  use std::io::BufReader;
+  use std::io::BufWriter;
+
+  pub struct CustomWriter {
+    buffer: Rc<RefCell<Vec<u8>>>,
+  }
+
+  impl CustomWriter {
+    pub fn new(buffer: Rc<RefCell<Vec<u8>>>) -> CustomWriter {
+      CustomWriter { buffer }
+    }
+  }
+
+  impl Write for CustomWriter {
+    fn write(&mut self, buf: &[u8]) -> IoResult<usize> {
+      self.buffer.borrow_mut().extend_from_slice(buf);
+      Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> IoResult<()> {
+      Ok(())
+    }
+  }
+
+  fn create_test_program() -> Program {
+    Program::from(vec![
+      Stmt::Load(Value::Pure(2), 1),
+      Stmt::Add(Value::Pure(2), 2),
+      Stmt::Output(Value::Pure(4), 3),
+      Stmt::Halt(4),
+    ])
+    .unwrap()
+  }
+
+  #[test]
+  fn ram_new_test() {
+    let program = create_test_program();
+    let reader = BufReader::new(std::io::empty());
+    let writer = BufWriter::new(std::io::sink());
+    let ram = Ram::new(program.clone(), Box::new(reader), Box::new(writer));
+
+    assert_eq!(ram.program, program);
+    assert_eq!(ram.pc, 0);
+    assert_eq!(ram.line, 0);
+    assert!(!ram.halt);
+    assert_eq!(ram.error, None);
+  }
+
+  #[test]
+  fn ram_run_test() {
+    let program = create_test_program();
+    let reader = BufReader::new(std::io::empty());
+    let output = Vec::new();
+    let writer = BufWriter::new(output);
+
+    let mut ram = Ram::new(program, Box::new(reader), Box::new(writer));
+    ram.run().unwrap();
+
+    assert_eq!(ram.get_registers().get(0), 4);
+    assert_eq!(ram.pc, 4);
+    assert_eq!(ram.line, 4);
+    assert!(ram.halt);
+    assert_eq!(ram.error, None);
+  }
+
+  #[test]
+  fn ram_step_test() {
+    let program = create_test_program();
+    let reader = BufReader::new(std::io::empty());
+    let output = Vec::new();
+    let writer = BufWriter::new(output);
+
+    let mut ram = Ram::new(program, Box::new(reader), Box::new(writer));
+
+    assert_eq!(ram.step(), Ok(()));
+    assert_eq!(ram.get_registers().get(0), 2);
+    assert_eq!(ram.pc, 1);
+    assert_eq!(ram.line, 1);
+
+    assert_eq!(ram.step(), Ok(()));
+    assert_eq!(ram.get_registers().get(0), 4);
+    assert_eq!(ram.pc, 2);
+    assert_eq!(ram.line, 2);
+
+    assert_eq!(ram.step(), Ok(()));
+    assert_eq!(ram.pc, 3);
+    assert_eq!(ram.line, 3);
+
+    assert_eq!(ram.step(), Ok(()));
+    assert_eq!(ram.pc, 4);
+    assert_eq!(ram.line, 4);
+    assert!(ram.halt);
+  }
+  #[test]
+  fn ram_output_test() {
+    let program = create_test_program();
+    let reader = BufReader::new(std::io::empty());
+    let output = Rc::new(RefCell::new(Vec::new()));
+    let writer = CustomWriter::new(output.clone());
+
+    let mut ram = Ram::new(program, Box::new(reader), Box::new(writer));
+    ram.run().unwrap();
+
+    let output_vec = output.borrow();
+    assert_eq!(String::from_utf8(output_vec.to_vec()).unwrap(), "4");
+  }
+}
