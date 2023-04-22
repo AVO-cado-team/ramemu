@@ -110,7 +110,7 @@ fn parse_with_register(opcode: &str, tail: &str, line: usize) -> Result<Stmt, Pa
   match opcode {
     "STORE" => Ok(Stmt::Store(arg, line)),
     "INPUT" | "READ" => Ok(Stmt::Input(arg, line)),
-    _ => unreachable!("Opcodes were chenged in parse function, but not there"),
+    _ => unreachable!("Opcodes were changed in parse function, but not there"),
   }
 }
 
@@ -143,7 +143,7 @@ fn parse_with_value(head: &str, tail: &str, line: usize) -> Result<Stmt, ParseEr
     "MUL" => Ok(Stmt::Mult(arg, line)),
     "MULT" => Ok(Stmt::Mult(arg, line)),
     "DIV" => Ok(Stmt::Div(arg, line)),
-    _ => unreachable!("Opcodes were chenged in parse function, but not there"),
+    _ => unreachable!("Opcodes were changed in parse function, but not there"),
   }
 }
 
@@ -166,7 +166,7 @@ fn parse_with_label(
     "JUMP" | "JMP" => Ok(Stmt::Jump(label, line)),
     "JZ" | "JZERO" => Ok(Stmt::JumpIfZero(label, line)),
     "JGZ" | "JGTZ" => Ok(Stmt::JumpGreatherZero(label, line)),
-    _ => unreachable!("Opcodes were chenged in parse function, but not there"),
+    _ => unreachable!("Opcodes were changed in parse function, but not there"),
   }
 }
 
@@ -184,4 +184,87 @@ fn is_valid_label(label: &str) -> bool {
   label
     .chars()
     .all(|c| c.is_ascii_alphanumeric() || c == '_' || c.is_ascii_digit())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::stmt::{RegisterValue, Stmt, Value};
+
+  #[test]
+  fn test_parse_line_load() {
+    let mut label_ids = HashMap::default();
+    let line = "LOAD 1";
+    let stmt = parse_line(line, 1, &mut label_ids).unwrap();
+    assert_eq!(
+      stmt,
+      Some(Stmt::Load(Value::Register(RegisterValue::Direct(1)), 1))
+    );
+  }
+
+  #[test]
+  fn test_parse_line_add() {
+    let mut label_ids = HashMap::default();
+    let line = "ADD *2";
+    let stmt = parse_line(line, 1, &mut label_ids).unwrap();
+    assert_eq!(
+      stmt,
+      Some(Stmt::Add(Value::Register(RegisterValue::Indirect(2)), 1))
+    );
+  }
+
+  #[test]
+  fn test_parse_line_jump() {
+    let mut label_ids = HashMap::default();
+    let line = "JUMP start";
+    let stmt = parse_line(line, 1, &mut label_ids).unwrap();
+    assert_eq!(stmt, Some(Stmt::Jump(0, 1)));
+
+    let line = "JUMP start";
+    let stmt = parse_line(line, 2, &mut label_ids).unwrap();
+    assert_eq!(stmt, Some(Stmt::Jump(0, 2)));
+  }
+
+  #[test]
+  fn test_parse_line_invalid_label() {
+    let mut label_ids = HashMap::default();
+    let line = "JUMP 1start";
+    let error = parse_line(line, 1, &mut label_ids).unwrap_err();
+    assert_eq!(error, ParseError::LabelIsNotValid(1));
+  }
+
+  #[test]
+  fn test_parse_line_unsupported_opcode() {
+    let mut label_ids = HashMap::default();
+    let line = "NOP";
+    let error = parse_line(line, 1, &mut label_ids).unwrap_err();
+    assert_eq!(error, ParseError::UnsupportedOpcode(1, "NOP".to_string()));
+  }
+
+  #[test]
+  fn test_parse_line_missing_argument() {
+    let mut label_ids = HashMap::default();
+    let line = "LOAD";
+    let error = parse_line(line, 1, &mut label_ids).unwrap_err();
+    assert_eq!(error, ParseError::ArgumentIsRequired(1));
+  }
+
+  #[test]
+  fn test_parse_comment() {
+    let mut label_ids = HashMap::default();
+    let line = "# This is a comment";
+    let stmt = parse_line(line, 1, &mut label_ids).unwrap();
+    assert_eq!(stmt, None);
+  }
+
+  #[test]
+  fn test_parse_line_load_with_comment() {
+    let mut label_ids = HashMap::default();
+    let line = "Load 1 # This is a comment";
+    let stmt = parse_line(line, 1, &mut label_ids).unwrap();
+    assert_eq!(
+      stmt,
+      Some(Stmt::Load(Value::Register(RegisterValue::Direct(1)), 1))
+    );
+  }
 }

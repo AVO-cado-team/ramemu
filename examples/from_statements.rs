@@ -10,7 +10,7 @@ fn main() {
     Stmt::Add(Value::Pure(2), 3),
     Stmt::Output(Value::Pure(0), 4),
     Stmt::Halt(5),
-  ]);
+  ]).unwrap();
 
   let reader = BufReader::new(std::io::empty());
   let writer = BufWriter::new(std::io::sink());
