@@ -43,7 +43,7 @@
 //!   Stmt::Add(Value::Pure(2), 3),
 //!   Stmt::Output(Value::Pure(0), 4),
 //!   Stmt::Halt(5),
-//! ]);
+//! ]).unwrap();
 //!
 //! let reader = BufReader::new(std::io::empty());
 //! let writer = BufWriter::new(std::io::sink());
@@ -134,15 +134,11 @@ impl Ram {
     self.error.clone()
   }
 
-  /// Evaluates the given statement without affecting the program counter.
-  #[inline]
-  pub fn eval(&mut self, stmt: Stmt) -> Result<(), InterpretError> {
-    let inject_into = self.pc;
-    self.program.inject_instruction(stmt, inject_into)?;
-    let _next_pc = self.eval_current()?;
-    self.program.remove_instruction(inject_into)?;
-    Ok(())
-  }
+  // /// Evaluates the given statement without affecting the program counter.
+  // #[inline]
+  // pub fn eval(&mut self, stmt: Stmt) -> Result<(), InterpretError> {
+  //   Ok(())
+  // }
 
   fn eval_current(&mut self) -> Result<usize, InterpretError> {
     if self.halt {
