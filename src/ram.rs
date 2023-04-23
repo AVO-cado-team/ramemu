@@ -17,7 +17,6 @@
 //! 6. Getting the current error state.
 //! 7. Evaluating a given statement.
 //! 8. Evaluating the current statement.
-//! 9. TODO: Injecting/Removing instructions somehow.
 //!
 //! The [`Ram`] struct also implements the [`Debug`] trait for better debug
 //! outputs and the [`Iterator`] trait, which allows the RAM machine to be used
@@ -134,21 +133,12 @@ impl Ram {
     self.error.clone()
   }
 
-  // /// Evaluates the given statement without affecting the program counter.
-  // #[inline]
-  // pub fn eval(&mut self, stmt: Stmt) -> Result<(), InterpretError> {
-  //   Ok(())
-  // }
-
-  fn eval_current(&mut self) -> Result<usize, InterpretError> {
-    if self.halt {
-      return Err(InterpretError::Halted(self.line));
-    }
-
-    let Some(stmt) = self.program.get(self.pc) else {
-      return Err(InterpretError::SegmentationFault(self.line));
-    };
-
+  /// Returns the next program counter.
+  ///
+  /// Evaluates the given statement without affecting the program counter.
+  /// Changes `line`
+  #[inline]
+  pub fn eval(&mut self, stmt: Stmt) -> Result<usize, InterpretError> {
     self.line = stmt.get_line();
     let mut next_pc = self.pc + 1;
 
@@ -176,14 +166,14 @@ impl Ram {
       Stmt::Jump(label, _) => {
         next_pc = self
           .program
-          .decode_label(*label)
+          .decode_label(label)
           .ok_or(InterpretError::UnknownLabel(self.line))?;
       }
       Stmt::JumpIfZero(label, _) => {
         if self.first() == 0 {
           next_pc = self
             .program
-            .decode_label(*label)
+            .decode_label(label)
             .ok_or(InterpretError::UnknownLabel(self.line))?;
         }
       }
@@ -191,7 +181,7 @@ impl Ram {
         if self.first() > 0 {
           next_pc = self
             .program
-            .decode_label(*label)
+            .decode_label(label)
             .ok_or(InterpretError::UnknownLabel(self.line))?;
         }
       }
@@ -223,22 +213,34 @@ impl Ram {
     Ok(next_pc)
   }
 
+  fn eval_current(&mut self) -> Result<usize, InterpretError> {
+    if self.halt {
+      return Err(InterpretError::Halted(self.line));
+    }
+
+    let Some(stmt) = self.program.get(self.pc) else {
+      return Err(InterpretError::SegmentationFault(self.line));
+    };
+
+    self.eval(*stmt)
+  }
+
   #[inline]
-  fn get_with_value(&self, value: &Value) -> Result<i64, InterpretError> {
+  fn get_with_value(&self, value: Value) -> Result<i64, InterpretError> {
     match value {
-      Value::Pure(index) => (*index)
+      Value::Pure(index) => (index)
         .try_into()
-        .map_err(|_| InterpretError::SegmentationFault(self.line)),
-      Value::Register(RegisterValue::Direct(index)) => self.get::<1>(*index),
-      Value::Register(RegisterValue::Indirect(index)) => self.get::<2>(*index),
+        .map_err(|_| InterpretError::InvalidLiteral(self.line)),
+      Value::Register(RegisterValue::Direct(index)) => self.get::<1>(index),
+      Value::Register(RegisterValue::Indirect(index)) => self.get::<2>(index),
     }
   }
 
   #[inline]
-  fn get_with_register(&self, value: &RegisterValue) -> Result<i64, InterpretError> {
+  fn get_with_register(&self, value: RegisterValue) -> Result<i64, InterpretError> {
     match value {
-      RegisterValue::Direct(index) => self.get::<0>(*index),
-      RegisterValue::Indirect(index) => self.get::<1>(*index),
+      RegisterValue::Direct(index) => self.get::<0>(index),
+      RegisterValue::Indirect(index) => self.get::<1>(index),
     }
   }
 
@@ -461,5 +463,52 @@ mod tests {
 
     let output_vec = output.borrow();
     assert_eq!(String::from_utf8(output_vec.to_vec()).unwrap(), "4");
+  }
+  #[test]
+  fn ram_eval_test() {
+    let program = Program::from(vec![
+      Stmt::Load(Value::Pure(2), 1),
+      Stmt::Add(Value::Pure(3), 2),
+      Stmt::Sub(Value::Pure(1), 3),
+      Stmt::Mult(Value::Pure(2), 4),
+      Stmt::Div(Value::Pure(2), 5),
+      Stmt::Halt(6),
+      Stmt::Label(0, 7),
+    ])
+    .unwrap();
+
+    let reader = BufReader::new(std::io::empty());
+    let output = Vec::new();
+    let writer = BufWriter::new(output);
+
+    let mut ram = Ram::new(program, Box::new(reader), Box::new(writer));
+
+    // Test Load
+    assert_eq!(ram.eval(Stmt::Load(Value::Pure(2), 1)), Ok(1));
+    assert_eq!(ram.get_registers().get(0), 2);
+
+    // Test Add
+    assert_eq!(ram.eval(Stmt::Add(Value::Pure(3), 2)), Ok(1));
+    assert_eq!(ram.get_registers().get(0), 5);
+
+    // Test Sub
+    assert_eq!(ram.eval(Stmt::Sub(Value::Pure(1), 3)), Ok(1));
+    assert_eq!(ram.get_registers().get(0), 4);
+
+    // Test Mult
+    assert_eq!(ram.eval(Stmt::Mult(Value::Pure(2), 4)), Ok(1));
+    assert_eq!(ram.get_registers().get(0), 8);
+
+    // Test Jump
+    assert_eq!(ram.eval(Stmt::Jump(0, 5)), Ok(6));
+    assert_eq!(ram.get_registers().get(0), 8);
+
+    // Test Div
+    assert_eq!(ram.eval(Stmt::Div(Value::Pure(2), 5)), Ok(1));
+    assert_eq!(ram.get_registers().get(0), 4);
+
+    // Test Halt
+    assert_eq!(ram.eval(Stmt::Halt(6)), Ok(1));
+    assert!(ram.halt);
   }
 }
