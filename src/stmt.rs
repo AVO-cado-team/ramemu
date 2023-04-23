@@ -62,55 +62,59 @@
 /// Represents a statement in the program, along with its line number from the source code.
 /// Statements are the basic building blocks of a program and define the operations to be performed.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum Stmt {
-  /// Loads value into register `0`
-  Load(Value, usize),
-  /// Stores value from register `0` into register
-  Store(RegisterValue, usize),
-  /// Adds value to register `0`
-  Add(Value, usize),
-  /// Subtracts value from register `0`
-  Sub(Value, usize),
-  /// Multiplies value with register `0`
-  Mult(Value, usize),
-  /// Divides register `0` by value
-  Div(Value, usize),
-  /// Jumps to label
-  Jump(Label, usize),
-  /// Jumps to label if register `0` is equal to `0`
-  JumpIfZero(Label, usize),
-  /// Jumps to label if register `0` is greater than `0`
-  JumpGreatherZero(Label, usize),
-  /// Inputs value from `reader`
-  Input(RegisterValue, usize),
-  /// Outputs value to `writer`
-  Output(Value, usize),
-  /// Represents label
-  Label(Label, usize),
-  /// Halts program
-  Halt(usize),
+pub struct Stmt {
+  pub op: Op,
+  pub line: usize,
+}
+
+impl PartialOrd for Stmt {
+  fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    Some(self.line.cmp(&other.line))
+  }
+}
+
+impl Ord for Stmt {
+  fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    self.line.cmp(&other.line)
+  }
 }
 
 impl Stmt {
-  /// Returns line number of statement in source code
-  #[inline]
-  pub fn get_line(&self) -> usize {
-    match self {
-      Stmt::Load(_, line)
-      | Stmt::Store(_, line)
-      | Stmt::Add(_, line)
-      | Stmt::Sub(_, line)
-      | Stmt::Mult(_, line)
-      | Stmt::Div(_, line)
-      | Stmt::Jump(_, line)
-      | Stmt::JumpIfZero(_, line)
-      | Stmt::JumpGreatherZero(_, line)
-      | Stmt::Input(_, line)
-      | Stmt::Output(_, line)
-      | Stmt::Label(_, line)
-      | Stmt::Halt(line) => *line,
-    }
+  //// Creates a new statement with the specified operation and line number.
+  pub fn new(op: Op, line: usize) -> Stmt {
+    Stmt { op, line }
   }
+}
+
+/// Represents an operation that can be performed by the program.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum Op {
+  /// Loads value into register `0`
+  Load(Value),
+  /// Stores value from register `0` into register
+  Store(RegisterValue),
+  /// Adds value to register `0`
+  Add(Value),
+  /// Subtracts value from register `0`
+  Sub(Value),
+  /// Multiplies value with register `0`
+  Mult(Value),
+  /// Divides register `0` by value
+  Div(Value),
+  /// Jumps to label
+  Jump(Label),
+  /// Jumps to label if register `0` is equal to `0`
+  JumpIfZero(Label),
+  /// Jumps to label if register `0` is greater than `0`
+  JumpGreatherZero(Label),
+  /// Inputs value from `reader`
+  Input(RegisterValue),
+  /// Outputs value to `writer`
+  Output(Value),
+  /// Represents label
+  Label(Label),
+  /// Halts program
+  Halt,
 }
 
 /// Represents a value that can be passed to a statement.
@@ -146,5 +150,3 @@ pub enum RegisterValue {
 
 /// Represent label
 pub type Label = usize;
-
-

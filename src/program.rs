@@ -7,10 +7,7 @@ use rustc_hash::FxHashMap as HashMap;
 use crate::{
   errors::{InterpretError, ParseError},
   parser,
-  stmt::{
-    Label,
-    Stmt::{self, *},
-  },
+  stmt::{Label, Op::*, Stmt},
 };
 
 /// Represents a program code.
@@ -41,12 +38,13 @@ impl Program {
   ///
   /// ```
   /// use ramemu::program::Program;
-  /// use ramemu::stmt::Stmt::Label;
+  /// use ramemu::stmt::Stmt;
+  /// use ramemu::stmt::Op::*;
   /// use rustc_hash::FxHashMap as HashMap;
   ///
   /// let instructions = vec![
-  ///     Label(0, 1),
-  ///     Label(1, 2),
+  ///     Stmt::new(Label(0), 1),
+  ///     Stmt::new(Label(1), 2),
   /// ];
   ///
   /// let mut label_ids = HashMap::default();
@@ -80,11 +78,12 @@ impl Program {
   ///
   /// ```
   /// use ramemu::program::Program;
-  /// use ramemu::stmt::Stmt::Label;
+  /// use ramemu::stmt::Stmt;
+  /// use ramemu::stmt::Op::*;
   ///
   /// let instructions = vec![
-  ///     Label(0, 1),
-  ///     Label(1, 2),
+  ///     Stmt::new(Label(0), 1),
+  ///     Stmt::new(Label(1), 2),
   /// ];
   ///
   /// let program = Program::from(instructions).unwrap();
@@ -97,8 +96,8 @@ impl Program {
 
     let label_ids: HashMap<String, usize> = instructions
       .iter()
-      .filter_map(|stmt| match stmt {
-        Stmt::Label(id, _) => Some((format!("L{}", id), *id)),
+      .filter_map(|stmt| match stmt.op {
+        Label(id) => Some((format!("L{}", id), id)),
         _ => None,
       })
       .collect();
@@ -143,9 +142,9 @@ impl Program {
     let mut labels_idx = HashMap::default();
 
     for (pc, stmt) in self.instructions.iter().enumerate() {
-      if let Stmt::Label(id, _) = stmt {
-        if labels_idx.insert(*id, pc).is_some() {
-          return Err(InterpretError::LabelIsNotValid(stmt.get_line()));
+      if let Label(id) = stmt.op {
+        if labels_idx.insert(id, pc).is_some() {
+          return Err(InterpretError::LabelIsNotValid(stmt.line));
         }
       }
     }
@@ -156,14 +155,14 @@ impl Program {
         .values()
         .find(|id| !labels_idx.contains_key(*id))
         .expect("Duplicate label id in provided program!");
-      let bad_jump = self.instructions.iter().find(|stmt| match stmt {
-        Jump(id, _) | JumpIfZero(id, _) | JumpGreatherZero(id, _) => *id == *bad_label,
+      let bad_jump = self.instructions.iter().find(|stmt| match stmt.op {
+        Jump(id) | JumpIfZero(id) | JumpGreatherZero(id) => id == *bad_label,
         _ => false,
       });
       return Err(InterpretError::LabelIsNotValid(
         bad_jump
           .expect("Found bad label id, but not where it used.")
-          .get_line(),
+          .line,
       ));
     }
 
@@ -195,11 +194,11 @@ mod tests {
 
   fn get_test_program() -> Program {
     let instructions = vec![
-      Stmt::Load(Value::Pure(42), 1),
-      Stmt::Label(0, 2),
-      Stmt::Add(Value::Register(RegisterValue::Direct(0)), 3),
-      Stmt::Sub(Value::Register(RegisterValue::Direct(1)), 4),
-      Stmt::Jump(0, 5),
+      Stmt::new(Load(Value::Pure(42)), 1),
+      Stmt::new(Label(0), 2),
+      Stmt::new(Add(Value::Register(RegisterValue::Direct(0))), 3),
+      Stmt::new(Sub(Value::Register(RegisterValue::Direct(1))), 4),
+      Stmt::new(Jump(0), 5),
     ];
     let mut program = Program::from(instructions).unwrap();
     program.init_labels().unwrap();
@@ -215,8 +214,8 @@ mod tests {
   #[test]
   fn get_instruction_test() {
     let program = get_test_program();
-    assert_eq!(program.get(0), Some(&Stmt::Load(Value::Pure(42), 1)));
-    assert_eq!(program.get(1), Some(&Stmt::Label(0, 2)));
+    assert_eq!(program.get(0), Some(&Stmt::new(Load(Value::Pure(42)), 1)));
+    assert_eq!(program.get(1), Some(&Stmt::new(Label(0), 2)));
     assert_eq!(program.get(6), None);
   }
 
