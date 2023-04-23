@@ -33,15 +33,15 @@
 //! ```
 //! use ramemu::program::Program;
 //! use ramemu::ram::Ram;
-//! use ramemu::stmt::{Stmt, Value};
+//! use ramemu::stmt::{Stmt, Value, Op::*};
 //! use std::io::BufReader;
 //! use std::io::BufWriter;
 //!
 //! let program = Program::from(vec![
-//!   Stmt::Load(Value::Pure(2), 1),
-//!   Stmt::Add(Value::Pure(2), 3),
-//!   Stmt::Output(Value::Pure(0), 4),
-//!   Stmt::Halt(5),
+//!   Stmt::new(Load(Value::Pure(2)), 1),
+//!   Stmt::new(Add(Value::Pure(2)), 3),
+//!   Stmt::new(Output(Value::Pure(0)), 4),
+//!   Stmt::new(Halt, 5),
 //! ]).unwrap();
 //!
 //! let reader = BufReader::new(std::io::empty());
@@ -61,6 +61,7 @@ use std::io::Write;
 use crate::errors::InterpretError;
 use crate::program::Program;
 use crate::registers::Registers;
+use crate::stmt::Op::*;
 use crate::stmt::RegisterValue;
 use crate::stmt::Stmt;
 use crate::stmt::Value;
@@ -139,23 +140,23 @@ impl Ram {
   /// Changes `line`
   #[inline]
   pub fn eval(&mut self, stmt: Stmt) -> Result<usize, InterpretError> {
-    self.line = stmt.get_line();
+    self.line = stmt.line;
     let mut next_pc = self.pc + 1;
 
-    match stmt {
-      Stmt::Label(..) => {}
-      Stmt::Load(value, _) => self.set_first(self.get_with_value(value)?),
-      Stmt::Store(value, _) => {
+    match stmt.op {
+      Label(..) => {}
+      Load(value) => self.set_first(self.get_with_value(value)?),
+      Store(value) => {
         let index: usize = self
           .get_with_register(value)?
           .try_into()
           .map_err(|_| InterpretError::SegmentationFault(self.line))?;
         self.registers.set(index, self.first());
       }
-      Stmt::Add(value, _) => self.set_first(self.first() + self.get_with_value(value)?),
-      Stmt::Sub(value, _) => self.set_first(self.first() - self.get_with_value(value)?),
-      Stmt::Mult(value, _) => self.set_first(self.first() * self.get_with_value(value)?),
-      Stmt::Div(value, _) => {
+      Add(value) => self.set_first(self.first() + self.get_with_value(value)?),
+      Sub(value) => self.set_first(self.first() - self.get_with_value(value)?),
+      Mult(value) => self.set_first(self.first() * self.get_with_value(value)?),
+      Div(value) => {
         self.set_first(
           self
             .first()
@@ -163,13 +164,13 @@ impl Ram {
             .ok_or(InterpretError::DivisionByZero(self.line))?,
         );
       }
-      Stmt::Jump(label, _) => {
+      Jump(label) => {
         next_pc = self
           .program
           .decode_label(label)
           .ok_or(InterpretError::UnknownLabel(self.line))?;
       }
-      Stmt::JumpIfZero(label, _) => {
+      JumpIfZero(label) => {
         if self.first() == 0 {
           next_pc = self
             .program
@@ -177,7 +178,7 @@ impl Ram {
             .ok_or(InterpretError::UnknownLabel(self.line))?;
         }
       }
-      Stmt::JumpGreatherZero(label, _) => {
+      JumpGreatherZero(label) => {
         if self.first() > 0 {
           next_pc = self
             .program
@@ -185,11 +186,11 @@ impl Ram {
             .ok_or(InterpretError::UnknownLabel(self.line))?;
         }
       }
-      Stmt::Output(value, _) => {
+      Output(value) => {
         let value = self.get_with_value(value)?;
         write!(&mut self.writer, "{}", value).map_err(|_| InterpretError::IOError(self.line))?
       }
-      Stmt::Input(value, _) => {
+      Input(value) => {
         let mut input = String::new();
         self
           .reader
@@ -207,7 +208,7 @@ impl Ram {
             .map_err(|_| InterpretError::InvalidInput(self.line, input.trim().to_string()))?,
         );
       }
-      Stmt::Halt(_) => self.halt = true,
+      Halt => self.halt = true,
     };
 
     Ok(next_pc)
@@ -384,10 +385,10 @@ mod tests {
 
   fn create_test_program() -> Program {
     Program::from(vec![
-      Stmt::Load(Value::Pure(2), 1),
-      Stmt::Add(Value::Pure(2), 2),
-      Stmt::Output(Value::Pure(4), 3),
-      Stmt::Halt(4),
+      Stmt::new(Load(Value::Pure(2)), 1),
+      Stmt::new(Add(Value::Pure(2)), 2),
+      Stmt::new(Output(Value::Pure(4)), 3),
+      Stmt::new(Halt, 4),
     ])
     .unwrap()
   }
@@ -467,13 +468,13 @@ mod tests {
   #[test]
   fn ram_eval_test() {
     let program = Program::from(vec![
-      Stmt::Load(Value::Pure(2), 1),
-      Stmt::Add(Value::Pure(3), 2),
-      Stmt::Sub(Value::Pure(1), 3),
-      Stmt::Mult(Value::Pure(2), 4),
-      Stmt::Div(Value::Pure(2), 5),
-      Stmt::Halt(6),
-      Stmt::Label(0, 7),
+      Stmt::new(Load(Value::Pure(2)), 1),
+      Stmt::new(Add(Value::Pure(3)), 2),
+      Stmt::new(Sub(Value::Pure(1)), 3),
+      Stmt::new(Mult(Value::Pure(2)), 4),
+      Stmt::new(Div(Value::Pure(2)), 5),
+      Stmt::new(Halt, 6),
+      Stmt::new(Label(0), 7),
     ])
     .unwrap();
 
@@ -484,31 +485,31 @@ mod tests {
     let mut ram = Ram::new(program, Box::new(reader), Box::new(writer));
 
     // Test Load
-    assert_eq!(ram.eval(Stmt::Load(Value::Pure(2), 1)), Ok(1));
+    assert_eq!(ram.eval(Stmt::new(Load(Value::Pure(2)), 1)), Ok(1));
     assert_eq!(ram.get_registers().get(0), 2);
 
     // Test Add
-    assert_eq!(ram.eval(Stmt::Add(Value::Pure(3), 2)), Ok(1));
+    assert_eq!(ram.eval(Stmt::new(Add(Value::Pure(3)), 2)), Ok(1));
     assert_eq!(ram.get_registers().get(0), 5);
 
     // Test Sub
-    assert_eq!(ram.eval(Stmt::Sub(Value::Pure(1), 3)), Ok(1));
+    assert_eq!(ram.eval(Stmt::new(Sub(Value::Pure(1)), 3)), Ok(1));
     assert_eq!(ram.get_registers().get(0), 4);
 
     // Test Mult
-    assert_eq!(ram.eval(Stmt::Mult(Value::Pure(2), 4)), Ok(1));
+    assert_eq!(ram.eval(Stmt::new(Mult(Value::Pure(2)), 4)), Ok(1));
     assert_eq!(ram.get_registers().get(0), 8);
 
     // Test Jump
-    assert_eq!(ram.eval(Stmt::Jump(0, 5)), Ok(6));
+    assert_eq!(ram.eval(Stmt::new(Jump(0), 5)), Ok(6));
     assert_eq!(ram.get_registers().get(0), 8);
 
     // Test Div
-    assert_eq!(ram.eval(Stmt::Div(Value::Pure(2), 5)), Ok(1));
+    assert_eq!(ram.eval(Stmt::new(Div(Value::Pure(2)), 5)), Ok(1));
     assert_eq!(ram.get_registers().get(0), 4);
 
     // Test Halt
-    assert_eq!(ram.eval(Stmt::Halt(6)), Ok(1));
+    assert_eq!(ram.eval(Stmt::new(Halt, 6)), Ok(1));
     assert!(ram.halt);
   }
 }
