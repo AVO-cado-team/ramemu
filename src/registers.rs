@@ -62,11 +62,7 @@ impl<T: Clone + Default> Registers<T> {
   /// ```
   #[inline]
   pub fn get(&self, index: usize) -> T {
-    self
-      .registers
-      .get(&index)
-      .cloned()
-      .unwrap_or_default()
+    self.registers.get(&index).cloned().unwrap_or_default()
   }
   /// Sets the value of the register at the given index.
   ///
@@ -123,5 +119,80 @@ impl<T, const N: usize> From<[T; N]> for Registers<T> {
 impl<T: Clone> From<&[T]> for Registers<T> {
   fn from(value: &[T]) -> Self {
     Self::from_iter(value.iter().cloned())
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::Registers;
+
+  #[test]
+  fn test_set_and_get() {
+    let mut registers: Registers<u32> = Registers::default();
+
+    registers.set(0, 42);
+    registers.set(1, 24);
+
+    assert_eq!(registers.get(0), 42);
+    assert_eq!(registers.get(1), 24);
+  }
+
+  #[test]
+  fn test_get_default() {
+    let registers: Registers<i32> = Registers::default();
+
+    assert_eq!(registers.get(2), 0);
+  }
+
+  #[test]
+  fn test_from_iter() {
+    let input = vec![10, 20, 30];
+    let registers: Registers<_> = input.into_iter().collect();
+
+    assert_eq!(registers.get(0), 10);
+    assert_eq!(registers.get(1), 20);
+    assert_eq!(registers.get(2), 30);
+  }
+
+  #[test]
+  fn test_from_iter_tuple() {
+    let input = vec![(0, 10), (1, 20), (2, 30)];
+    let registers: Registers<i32> = input.into_iter().collect();
+
+    assert_eq!(registers.get(0), 10);
+    assert_eq!(registers.get(1), 20);
+    assert_eq!(registers.get(2), 30);
+  }
+
+  #[test]
+  fn test_from_array() {
+    let input = [10, 20, 30];
+    let registers: Registers<_> = input.into();
+
+    assert_eq!(registers.get(0), 10);
+    assert_eq!(registers.get(1), 20);
+    assert_eq!(registers.get(2), 30);
+  }
+
+  #[test]
+  fn test_from_slice() {
+    let input: &[i32] = &[10, 20, 30];
+    let registers: Registers<i32> = input.into();
+
+    assert_eq!(registers.get(0), 10);
+    assert_eq!(registers.get(1), 20);
+    assert_eq!(registers.get(2), 30);
+  }
+
+  #[test]
+  fn test_debug_fmt() {
+    let mut registers: Registers<u32> = Registers::default();
+
+    registers.set(0, 42);
+    registers.set(1, 24);
+    registers.set(2, 10);
+
+    let debug_output = format!("{:?}", registers);
+    assert_eq!(debug_output, "[42, 24, 10]");
   }
 }
