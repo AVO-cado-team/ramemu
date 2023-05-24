@@ -4,6 +4,7 @@
 //!
 
 use crate::errors::ParseError;
+use crate::program::LabelId;
 use rustc_hash::FxHashMap as HashMap;
 
 use crate::stmt::Label;
@@ -37,7 +38,8 @@ pub fn parse<'a>(
 pub fn parse_line(
   source: &str,
   line: usize,
-  label_ids: &mut HashMap<String, usize>,
+  // Maybe it should be deleted from args
+  label_ids: &mut HashMap<String, LabelId>,
 ) -> Result<Option<Stmt>, ParseError> {
   let facts: Vec<_> = source
     .split('#')
@@ -47,7 +49,7 @@ pub fn parse_line(
     .collect();
 
   if facts.len() > 2 {
-    Err(ParseError::UnsupportedSyntax(line))?
+    return Err(ParseError::UnsupportedSyntax(line));
   }
 
   if facts.is_empty() {
@@ -63,7 +65,7 @@ pub fn parse_line(
       let id = *label_ids.entry(label.to_string()).or_insert(len);
       return Ok(Some(Stmt::new(Label(id), line)));
     }
-    Err(ParseError::LabelIsNotValid(line))?
+    return Err(ParseError::LabelIsNotValid(line));
   }
 
   let opcode = head.to_uppercase();
@@ -86,7 +88,7 @@ pub fn parse_line(
       line,
     )?,
     "HALT" => Stmt::new(Halt, line),
-    _ => Err(ParseError::UnsupportedOpcode(line, opcode))?,
+    _ => return Err(ParseError::UnsupportedOpcode(line, opcode)),
   };
 
   Ok(Some(stmt))
@@ -103,9 +105,9 @@ fn parse_with_register(opcode: &str, tail: &str, line: usize) -> Result<Stmt, Pa
     } else if let Ok(arg) = tail.parse::<usize>() {
       RegisterValue::Direct(arg)
     } else if tail.starts_with('=') {
-      Err(ParseError::pure_argument_not_allowed(line))?
+      return Err(ParseError::pure_argument_not_allowed(line));
     } else {
-      Err(ParseError::not_valid_argument(line))?
+      return Err(ParseError::not_valid_argument(line));
     }
   };
   let op = match opcode {
@@ -133,7 +135,7 @@ fn parse_with_value(head: &str, tail: &str, line: usize) -> Result<Stmt, ParseEr
     } else if let Ok(arg) = tail.parse::<usize>() {
       Value::Register(RegisterValue::Direct(arg))
     } else {
-      Err(ParseError::not_valid_argument(line))?
+      return Err(ParseError::not_valid_argument(line));
     }
   };
 
@@ -162,7 +164,7 @@ fn parse_with_label(
     let id = label_ids.entry(label.to_string()).or_insert(len);
     *id
   } else {
-    Err(ParseError::LabelIsNotValid(line))?
+    return Err(ParseError::LabelIsNotValid(line));
   };
 
   let op = match head {
