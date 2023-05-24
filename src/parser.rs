@@ -4,6 +4,7 @@
 //!
 
 use crate::errors::ParseError;
+use crate::program::LabelId;
 use rustc_hash::FxHashMap as HashMap;
 
 use crate::stmt::Label;
@@ -37,7 +38,8 @@ pub fn parse<'a>(
 pub fn parse_line(
   source: &str,
   line: usize,
-  label_ids: &mut HashMap<String, usize>,
+  // Maybe it should be deleted from args
+  label_ids: &mut HashMap<String, LabelId>,
 ) -> Result<Option<Stmt>, ParseError> {
   let facts: Vec<_> = source
     .split('#')

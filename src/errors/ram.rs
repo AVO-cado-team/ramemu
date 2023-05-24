@@ -6,17 +6,13 @@ pub enum InterpretError {
   /// Occurs when a reference to an unknown label is encountered.
   UnknownLabel(usize),
   /// Occurs when invalid input is provided during program execution.
-  InvalidInput(usize, String),
+  InvalidInput(usize, Box<str>),
   /// Occurs when an invalid literal value is encountered.
   InvalidLiteral(usize),
   /// Occurs when a division by zero is attempted.
   DivisionByZero(usize),
   /// Occurs when there is an error writing to provided writer.
   IOError(usize),
-  /// Occurs when a label is not valid. Difference from
-  /// ParseError::LabelIsNotValid is that this for runtime
-  /// errors while inserting new instructions.
-  LabelIsNotValid(usize),
   /// Occurs when the program is halted but step was made.
   Halted(usize),
 }
