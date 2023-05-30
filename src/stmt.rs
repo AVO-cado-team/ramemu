@@ -63,58 +63,58 @@
 /// Statements are the basic building blocks of a program and define the operations to be performed.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Stmt {
-  pub op: Op,
-  pub line: usize,
+    pub op: Op,
+    pub line: usize,
 }
 
 impl PartialOrd for Stmt {
-  fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-    Some(self.line.cmp(&other.line))
-  }
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.line.cmp(&other.line))
+    }
 }
 
 impl Ord for Stmt {
-  fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-    self.line.cmp(&other.line)
-  }
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.line.cmp(&other.line)
+    }
 }
 
 impl Stmt {
-  //// Creates a new statement with the specified operation and line number.
-  pub fn new(op: Op, line: usize) -> Stmt {
-    Stmt { op, line }
-  }
+    //// Creates a new statement with the specified operation and line number.
+    pub fn new(op: Op, line: usize) -> Stmt {
+        Stmt { op, line }
+    }
 }
 
 /// Represents an operation that can be performed by the program.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Op {
-  /// Loads value into register `0`
-  Load(Value),
-  /// Stores value from register `0` into register
-  Store(RegisterValue),
-  /// Adds value to register `0`
-  Add(Value),
-  /// Subtracts value from register `0`
-  Sub(Value),
-  /// Multiplies value with register `0`
-  Mult(Value),
-  /// Divides register `0` by value
-  Div(Value),
-  /// Jumps to label
-  Jump(Label),
-  /// Jumps to label if register `0` is equal to `0`
-  JumpIfZero(Label),
-  /// Jumps to label if register `0` is greater than `0`
-  JumpGreatherZero(Label),
-  /// Inputs value from `reader`
-  Input(RegisterValue),
-  /// Outputs value to `writer`
-  Output(Value),
-  /// Represents label
-  Label(Label),
-  /// Halts program
-  Halt,
+    /// Loads value into register `0`
+    Load(Value),
+    /// Stores value from register `0` into register
+    Store(RegisterValue),
+    /// Adds value to register `0`
+    Add(Value),
+    /// Subtracts value from register `0`
+    Sub(Value),
+    /// Multiplies value with register `0`
+    Mult(Value),
+    /// Divides register `0` by value
+    Div(Value),
+    /// Jumps to label
+    Jump(Label),
+    /// Jumps to label if register `0` is equal to `0`
+    JumpIfZero(Label),
+    /// Jumps to label if register `0` is greater than `0`
+    JumpGreatherZero(Label),
+    /// Inputs value from `reader`
+    Input(RegisterValue),
+    /// Outputs value to `writer`
+    Output(Value),
+    /// Represents label
+    Label(Label),
+    /// Halts program
+    Halt,
 }
 
 /// Represents a value that can be passed to a statement.
@@ -125,12 +125,12 @@ pub enum Op {
 /// - `LOAD 5`: Loads the value stored in register 5 into register 0.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Value {
-  /// Represents a pure numeric value, indicated by an equal sign (`=`) before the number.
-  /// For example, `LOAD =5` loads the pure numeric value `5` into register 0.
-  Pure(isize),
-  /// Represents the value stored in a specific register.
-  // /// For example, `LOAD 5` loads the value stored in register 5 into register 0.
-  Register(RegisterValue),
+    /// Represents a pure numeric value, indicated by an equal sign (`=`) before the number.
+    /// For example, `LOAD =5` loads the pure numeric value `5` into register 0.
+    Pure(isize),
+    /// Represents the value stored in a specific register.
+    // /// For example, `LOAD 5` loads the value stored in register 5 into register 0.
+    Register(RegisterValue),
 }
 
 /// Represents a register that can be operated on directly or indirectly.
@@ -140,12 +140,12 @@ pub enum Value {
 /// - Indirect: The register is specified indirectly, e.g., `STORE *2` stores the value from register 0 into the register whose number is stored in register 2.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum RegisterValue {
-  /// Specifies the register to be operated on directly.
-  /// Example: `STORE 2` stores the value from register 0 into register 2.
-  Direct(usize),
-  /// Specifies the register to be operated on indirectly.
-  /// Example: `STORE *2` stores the value from register 0 into the register whose number is stored in register 2.
-  Indirect(usize),
+    /// Specifies the register to be operated on directly.
+    /// Example: `STORE 2` stores the value from register 0 into register 2.
+    Direct(usize),
+    /// Specifies the register to be operated on indirectly.
+    /// Example: `STORE *2` stores the value from register 0 into the register whose number is stored in register 2.
+    Indirect(usize),
 }
 
 /// Represent label
