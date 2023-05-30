@@ -81,43 +81,32 @@ impl Program {
     /// This method parses the source code, creating a [`Program`] with the resulting
     /// instructions and labels.
     pub fn from_source(source: &str) -> Result<Program, ParseError> {
-        let mut label_ids: HashMap<String, LabelId> = HashMap::default();
-        let stmts: Result<Vec<Stmt>, ParseError> = parser::parse(source, &mut label_ids).collect();
+        let stmts: Result<Vec<Stmt>, ParseError> = parser::parse(source).collect();
         let instructions = stmts?;
-        let mut p = Program {
-            instructions,
-            labels: Default::default(),
-        };
+        let mut labels = HashMap::default();
 
-        p.init_labels()?;
-
-        Ok(p)
-    }
-
-    /// Initializes labels of the program.
-    ///
-    /// This method updates the internal label mapping based on the current instructions.
-    #[inline]
-    pub fn init_labels(self: &mut Program) -> Result<(), ParseError> {
         // add labels to the label map
-        for (pc, stmt) in self.instructions.iter().enumerate() {
+        for (pc, stmt) in instructions.iter().enumerate() {
             if let Label(id) = stmt.op {
-                if self.labels.insert(id, pc).is_some() {
+                if labels.insert(id, pc).is_some() {
                     return Err(ParseError::LabelIsNotValid(stmt.line));
                 }
             }
         }
 
         //  check if the jump labels are valid
-        for stmt in self.instructions.iter() {
+        for stmt in instructions.iter() {
             if let Jump(id) | JumpIfZero(id) | JumpGreatherZero(id) = stmt.op {
-                if !self.labels.contains_key(&id) {
+                if !labels.contains_key(&id) {
                     return Err(ParseError::LabelIsNotValid(stmt.line));
                 }
             }
         }
 
-        Ok(())
+        Ok(Program {
+            instructions,
+            labels
+        })
     }
 
     /// Returns the instruction at the given index.
