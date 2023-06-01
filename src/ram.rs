@@ -118,6 +118,8 @@ impl Ram {
     }
 
     /// Executes one step of the program and advances the program counter.
+    // Maybe, it should return `R0` as `Ok`?
+    #[inline]
     pub fn step(&mut self) -> Result<(), InterpretError> {
         let result = self.eval_current();
 
