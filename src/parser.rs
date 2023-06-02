@@ -53,7 +53,7 @@ pub fn parse_line(
         return Ok(None);
     }
 
-    let head = facts[0].trim();
+    let head = facts[0];
     let tail = facts.get(1);
 
     if let Some(label) = head.strip_suffix(':') {

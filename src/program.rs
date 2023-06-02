@@ -64,8 +64,8 @@ impl Program {
         let labels = instructions
             .iter()
             .enumerate()
-            .filter_map(|(i, stmt)| match stmt.op {
-                Label(id) => Some((id, i)),
+            .filter_map(|(addr, stmt)| match stmt.op {
+                Label(id) => Some((id, addr)),
                 _ => None,
             })
             .collect();

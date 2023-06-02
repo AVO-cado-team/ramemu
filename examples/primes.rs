@@ -2,8 +2,7 @@ use std::io::{stdin, stdout, BufReader};
 
 use ramemu::{program::Program, ram::Ram};
 
-fn main() {
-  let source = r#"
+const SOURCE: &str = r#"
 load =0
 
 read  0
@@ -63,15 +62,17 @@ quit:
 halt
 "#;
 
-  let program = Program::from_source(source).unwrap();
-  let mut ram = Ram::new(
-    program,
-    Box::new(BufReader::new(stdin())),
-    Box::new(stdout()),
-  );
+fn main() {
+    let program = Program::from_source(SOURCE).unwrap();
 
-  match ram.run() {
-    Ok(_) => println!("\nProgram executed successfully"),
-    Err(e) => println!("\nError during execution: {:?}", e),
-  }
+    let mut ram = Ram::new(
+        program,
+        Box::new(BufReader::new(stdin())),
+        Box::new(stdout()),
+    );
+
+    match ram.run() {
+        Ok(_) => println!("\nProgram executed successfully"),
+        Err(e) => println!("\nError during execution: {:?}", e),
+    }
 }
