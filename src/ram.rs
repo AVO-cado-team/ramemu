@@ -134,8 +134,8 @@ impl Ram {
     /// Returns the current error state of the [`Ram`] instance as an
     /// [`Option<InterpretError>`].
     #[inline]
-    pub fn get_error(&self) -> Option<InterpretError> {
-        self.error.clone()
+    pub fn get_error(&self) -> Option<&InterpretError> {
+        self.error.as_ref()
     }
 
     /// Returns the next program counter.
