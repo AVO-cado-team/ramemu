@@ -105,7 +105,7 @@ impl Program {
 
         Ok(Program {
             instructions,
-            labels
+            labels,
         })
     }
 
