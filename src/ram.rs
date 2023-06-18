@@ -222,11 +222,11 @@ impl Ram {
             return Err(InterpretError::Halted(self.line));
         }
 
-        let Some(stmt) = self.program.get(self.pc) else {
+        let Some(&stmt) = self.program.get(self.pc) else {
           return Err(InterpretError::SegmentationFault(self.line));
         };
 
-        self.eval(*stmt)
+        self.eval(stmt)
     }
 
     #[inline]
@@ -291,12 +291,15 @@ impl Debug for Ram {
 }
 
 impl Iterator for Ram {
-    type Item = Result<RamState, InterpretError>;
+    type Item = RamState;
     fn next(&mut self) -> Option<Self::Item> {
-        if self.halt {
-            return None;
-        }
-        Some(self.step().map(|_| RamState::from(&*self)))
+        self.step().ok().and_then(|_| {
+            if !self.halt {
+                Some(RamState::from(self))
+            } else {
+                None
+            }
+        })
     }
 }
 
@@ -532,4 +535,3 @@ mod tests {
         assert!(ram.halt);
     }
 }
-
