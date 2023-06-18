@@ -341,6 +341,20 @@ impl From<&Ram> for RamState {
     }
 }
 
+impl From<&mut Ram> for RamState {
+    /// Creates a [`RamState`] instance from a reference to a [`Ram`] instance.
+    fn from(ram: &mut Ram) -> Self {
+        Self {
+            program: ram.program.clone(),
+            registers: ram.registers.clone(),
+            pc: ram.pc,
+            line: ram.line,
+            halt: ram.halt,
+            error: ram.error.clone(),
+        }
+    }
+}
+
 impl RamState {
     /// Creates a new [`Ram`] instance from the given [`RamState`], input reader, and output writer.
     pub fn create_ram(self, reader: Box<dyn BufRead>, writer: Box<dyn Write>) -> Ram {
