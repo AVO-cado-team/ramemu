@@ -57,6 +57,7 @@ use std::fmt::Debug;
 use std::fmt::Formatter;
 use std::io::BufRead;
 use std::io::Write;
+use std::iter::FusedIterator;
 
 use crate::errors::InterpretError;
 use crate::program::CodeAddress;
@@ -299,6 +300,8 @@ impl Iterator for Ram {
     }
 }
 
+impl FusedIterator for Ram {}
+
 /// The [`RamState`] struct represents a snapshot of a RAM machine's state.
 #[derive(Default, Debug, Clone)]
 pub struct RamState {
@@ -515,3 +518,4 @@ mod tests {
         assert!(ram.halt);
     }
 }
+
