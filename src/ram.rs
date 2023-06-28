@@ -308,11 +308,17 @@ impl FusedIterator for Ram {}
 /// The [`RamState`] struct represents a snapshot of a RAM machine's state.
 #[derive(Default, Debug, Clone)]
 pub struct RamState {
+    /// The program of the RAM machine.
     pub program: Program,
+    /// The registers of the RAM machine.
     pub registers: Registers<i64>,
+    /// The program counter of the RAM machine.
     pub pc: usize,
+    /// The current line of source code of the RAM machine.
     pub line: usize,
+    /// Whether the RAM machine is halted.
     pub halt: bool,
+    /// The error of the RAM machine.
     pub error: Option<InterpretError>,
 }
 

@@ -63,7 +63,9 @@
 /// Statements are the basic building blocks of a program and define the operations to be performed.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Stmt {
+    /// The operation to be performed by the statement.
     pub op: Op,
+    /// The line number from the source code.
     pub line: usize,
 }
 
@@ -80,7 +82,7 @@ impl Ord for Stmt {
 }
 
 impl Stmt {
-    //// Creates a new statement with the specified operation and line number.
+    /// Creates a new statement with the specified operation and line number.
     pub fn new(op: Op, line: usize) -> Stmt {
         Stmt { op, line }
     }

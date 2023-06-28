@@ -23,11 +23,17 @@ pub enum ParseError {
 /// Represents various invalid argument errors that may occur during parsing and validating input.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord)]
 pub enum InvalidArgument {
+    /// Occurs when a label is not valid.
     LabelIsNotValid,
+    /// Occurs when an argument is required but not provided.
     ArgumentIsRequired,
+    /// Occurs when an argument muts be numeric but it is not.
     ArgumentValueMustBeNumberic,
+
+    /// Occurs when a pure argument is not allowed.
     PureArgumentIsNotAllowed,
 
+    /// Occurs when an argument is not valid.
     ArgumentIsNotValid,
 }
 

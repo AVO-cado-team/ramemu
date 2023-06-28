@@ -22,6 +22,9 @@
 //! [`ram`]: ram/index.html
 //! [`registers`]: registers/index.html
 //! [`stmt`]: stmt/index.html
+
+#![warn(missing_docs)]
+
 pub mod errors;
 pub mod parser;
 pub mod program;
