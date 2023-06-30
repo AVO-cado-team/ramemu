@@ -5,9 +5,9 @@
 
 use crate::errors::ParseError;
 use crate::program::LabelId;
+use crate::stmt::Op;
 use rustc_hash::FxHashMap as HashMap;
 
-use crate::stmt::Label;
 use crate::stmt::Op::*;
 use crate::stmt::RegisterValue;
 use crate::stmt::Stmt;
@@ -59,8 +59,8 @@ pub fn parse_line(
     if let Some(label) = head.strip_suffix(':') {
         if is_valid_label(label) {
             let len = label_ids.len();
-            let id = *label_ids.entry(label.to_string()).or_insert(len);
-            return Ok(Some(Stmt::new(Label(id), line)));
+            let id = *label_ids.entry(label.to_string()).or_insert(LabelId(len));
+            return Ok(Some(Stmt::new(Op::Label(id), line)));
         }
         return Err(ParseError::LabelIsNotValid(line));
     }
@@ -150,13 +150,12 @@ fn parse_with_label(
     head: &str,
     tail: &str,
     line: usize,
-    label_ids: &mut HashMap<String, usize>,
+    label_ids: &mut HashMap<String, LabelId>,
 ) -> Result<Stmt, ParseError> {
-    let label: Label = if is_valid_label(tail) {
+    let label: LabelId = if is_valid_label(tail) {
         let label = tail;
         let len = label_ids.len();
-        let id = label_ids.entry(label.to_string()).or_insert(len);
-        *id
+        *label_ids.entry(label.to_string()).or_insert(LabelId(len))
     } else {
         return Err(ParseError::LabelIsNotValid(line));
     };
@@ -218,11 +217,11 @@ mod tests {
         let mut label_ids = HashMap::default();
         let line = "JUMP start";
         let stmt = parse_line(line, 1, &mut label_ids).unwrap();
-        assert_eq!(stmt, Some(Stmt::new(Jump(0), 1)));
+        assert_eq!(stmt, Some(Stmt::new(Jump(0.into()), 1)));
 
         let line = "JUMP start";
         let stmt = parse_line(line, 2, &mut label_ids).unwrap();
-        assert_eq!(stmt, Some(Stmt::new(Jump(0), 2)));
+        assert_eq!(stmt, Some(Stmt::new(Jump(0.into()), 2)));
     }
 
     #[test]

@@ -32,6 +32,7 @@
 //!
 //! ```
 //! use ramemu::program::Program;
+//! use ramemu::registers::RegisterId;
 //! use ramemu::ram::Ram;
 //! use ramemu::stmt::{Stmt, Value, Op::*};
 //! use std::io::BufReader;
@@ -49,7 +50,7 @@
 //! let mut ram = Ram::new(program, Box::new(reader), Box::new(writer));
 //!
 //! ram.run().unwrap();
-//! assert_eq!(ram.get_registers().get(0), 4);
+//! assert_eq!(ram.get_registers().get(RegisterId(0)), 4);
 //! ```
 //!
 //! This module enables the creation of a RAM machine and provides the necessary functionalities to execute, debug, and manage its state.
@@ -62,6 +63,7 @@ use std::iter::FusedIterator;
 use crate::errors::InterpretError;
 use crate::program::CodeAddress;
 use crate::program::Program;
+use crate::registers::RegisterId;
 use crate::registers::Registers;
 use crate::stmt::Op::*;
 use crate::stmt::RegisterValue;
@@ -89,7 +91,7 @@ impl Ram {
         Ram {
             program,
             registers: [0; 100].into(),
-            pc: 0,
+            pc: CodeAddress(0),
             line: 0,
             halt: false,
             error: None,
@@ -156,7 +158,7 @@ impl Ram {
                     .get_with_register(value)?
                     .try_into()
                     .map_err(|_| InterpretError::SegmentationFault(self.line))?;
-                self.registers.set(index, self.first());
+                self.registers.set(RegisterId(index), self.first());
             }
             Add(value) => self.set_first(self.first() + self.get_with_value(value)?),
             Sub(value) => self.set_first(self.first() - self.get_with_value(value)?),
@@ -205,7 +207,7 @@ impl Ram {
                     .try_into()
                     .map_err(|_| InterpretError::SegmentationFault(self.line))?;
                 self.registers.set(
-                    index,
+                    RegisterId(index),
                     input.trim().parse().map_err(|_| {
                         InterpretError::InvalidInput(self.line, input.trim().into())
                     })?,
@@ -217,7 +219,7 @@ impl Ram {
         Ok(next_pc)
     }
 
-    fn eval_current(&mut self) -> Result<usize, InterpretError> {
+    fn eval_current(&mut self) -> Result<CodeAddress, InterpretError> {
         if self.halt {
             return Err(InterpretError::Halted(self.line));
         }
@@ -250,12 +252,12 @@ impl Ram {
 
     #[inline]
     fn set_first(&mut self, value: i64) {
-        self.registers.set(0, value);
+        self.registers.set(RegisterId(0), value);
     }
 
     #[inline]
     fn first(&self) -> i64 {
-        self.registers.get(0)
+        self.registers.get(RegisterId(0))
     }
 
     fn get<const N: usize>(&self, index: usize) -> Result<i64, InterpretError> {
@@ -269,11 +271,11 @@ impl Ram {
         for _ in 0..N - 1 {
             index = self
                 .registers
-                .get(index)
+                .get(RegisterId(index))
                 .try_into()
                 .map_err(|_| InterpretError::SegmentationFault(self.line))?
         }
-        Ok(self.registers.get(index))
+        Ok(self.registers.get(RegisterId(index)))
     }
 }
 
@@ -313,7 +315,7 @@ pub struct RamState {
     /// The registers of the RAM machine.
     pub registers: Registers<i64>,
     /// The program counter of the RAM machine.
-    pub pc: usize,
+    pub pc: CodeAddress,
     /// The current line of source code of the RAM machine.
     pub line: usize,
     /// Whether the RAM machine is halted.
@@ -429,7 +431,7 @@ mod tests {
         let ram = Ram::new(program.clone(), Box::new(reader), Box::new(writer));
 
         assert_eq!(ram.program, program);
-        assert_eq!(ram.pc, 0);
+        assert_eq!(ram.pc, 0.into());
         assert_eq!(ram.line, 0);
         assert!(!ram.halt);
         assert_eq!(ram.error, None);
@@ -445,8 +447,8 @@ mod tests {
         let mut ram = Ram::new(program, Box::new(reader), Box::new(writer));
         ram.run().unwrap();
 
-        assert_eq!(ram.get_registers().get(0), 4);
-        assert_eq!(ram.pc, 4);
+        assert_eq!(ram.get_registers().get(0.into()), 4);
+        assert_eq!(ram.pc, 4.into());
         assert_eq!(ram.line, 4);
         assert!(ram.halt);
         assert_eq!(ram.error, None);
@@ -462,21 +464,21 @@ mod tests {
         let mut ram = Ram::new(program, Box::new(reader), Box::new(writer));
 
         assert_eq!(ram.step(), Ok(()));
-        assert_eq!(ram.get_registers().get(0), 2);
-        assert_eq!(ram.pc, 1);
+        assert_eq!(ram.get_registers().get(0.into()), 2);
+        assert_eq!(ram.pc, 1.into());
         assert_eq!(ram.line, 1);
 
         assert_eq!(ram.step(), Ok(()));
-        assert_eq!(ram.get_registers().get(0), 4);
-        assert_eq!(ram.pc, 2);
+        assert_eq!(ram.get_registers().get(0.into()), 4);
+        assert_eq!(ram.pc, 2.into());
         assert_eq!(ram.line, 2);
 
         assert_eq!(ram.step(), Ok(()));
-        assert_eq!(ram.pc, 3);
+        assert_eq!(ram.pc, 3.into());
         assert_eq!(ram.line, 3);
 
         assert_eq!(ram.step(), Ok(()));
-        assert_eq!(ram.pc, 4);
+        assert_eq!(ram.pc, 4.into());
         assert_eq!(ram.line, 4);
         assert!(ram.halt);
     }
@@ -502,7 +504,7 @@ mod tests {
             Stmt::new(Mult(Value::Pure(2)), 4),
             Stmt::new(Div(Value::Pure(2)), 5),
             Stmt::new(Halt, 6),
-            Stmt::new(Label(0), 7),
+            Stmt::new(Label(0.into()), 7),
         ])
         .unwrap();
 
@@ -513,31 +515,31 @@ mod tests {
         let mut ram = Ram::new(program, Box::new(reader), Box::new(writer));
 
         // Test Load
-        assert_eq!(ram.eval(Stmt::new(Load(Value::Pure(2)), 1)), Ok(1));
-        assert_eq!(ram.get_registers().get(0), 2);
+        assert_eq!(ram.eval(Stmt::new(Load(Value::Pure(2)), 1)), Ok(1.into()));
+        assert_eq!(ram.get_registers().get(0.into()), 2);
 
         // Test Add
-        assert_eq!(ram.eval(Stmt::new(Add(Value::Pure(3)), 2)), Ok(1));
-        assert_eq!(ram.get_registers().get(0), 5);
+        assert_eq!(ram.eval(Stmt::new(Add(Value::Pure(3)), 2)), Ok(1.into()));
+        assert_eq!(ram.get_registers().get(0.into()), 5);
 
         // Test Sub
-        assert_eq!(ram.eval(Stmt::new(Sub(Value::Pure(1)), 3)), Ok(1));
-        assert_eq!(ram.get_registers().get(0), 4);
+        assert_eq!(ram.eval(Stmt::new(Sub(Value::Pure(1)), 3)), Ok(1.into()));
+        assert_eq!(ram.get_registers().get(0.into()), 4);
 
         // Test Mult
-        assert_eq!(ram.eval(Stmt::new(Mult(Value::Pure(2)), 4)), Ok(1));
-        assert_eq!(ram.get_registers().get(0), 8);
+        assert_eq!(ram.eval(Stmt::new(Mult(Value::Pure(2)), 4)), Ok(1.into()));
+        assert_eq!(ram.get_registers().get(0.into()), 8);
 
         // Test Jump
-        assert_eq!(ram.eval(Stmt::new(Jump(0), 5)), Ok(6));
-        assert_eq!(ram.get_registers().get(0), 8);
+        assert_eq!(ram.eval(Stmt::new(Jump(0.into()), 5)), Ok(6.into()));
+        assert_eq!(ram.get_registers().get(0.into()), 8);
 
         // Test Div
-        assert_eq!(ram.eval(Stmt::new(Div(Value::Pure(2)), 5)), Ok(1));
-        assert_eq!(ram.get_registers().get(0), 4);
+        assert_eq!(ram.eval(Stmt::new(Div(Value::Pure(2)), 5)), Ok(1.into()));
+        assert_eq!(ram.get_registers().get(0.into()), 4);
 
         // Test Halt
-        assert_eq!(ram.eval(Stmt::new(Halt, 6)), Ok(1));
+        assert_eq!(ram.eval(Stmt::new(Halt, 6)), Ok(1.into()));
         assert!(ram.halt);
     }
 }

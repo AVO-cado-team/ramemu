@@ -59,6 +59,8 @@
 //! It also demonstrates the use of `Value` and `RegisterValue` for specifying operands in the
 //! assembly language code.
 
+use crate::program::LabelId;
+
 /// Represents a statement in the program, along with its line number from the source code.
 /// Statements are the basic building blocks of a program and define the operations to be performed.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -104,17 +106,17 @@ pub enum Op {
     /// Divides register `0` by value
     Div(Value),
     /// Jumps to label
-    Jump(Label),
+    Jump(LabelId),
     /// Jumps to label if register `0` is equal to `0`
-    JumpIfZero(Label),
+    JumpIfZero(LabelId),
     /// Jumps to label if register `0` is greater than `0`
-    JumpGreatherZero(Label),
+    JumpGreatherZero(LabelId),
     /// Inputs value from `reader`
     Input(RegisterValue),
     /// Outputs value to `writer`
     Output(Value),
     /// Represents label
-    Label(Label),
+    Label(LabelId),
     /// Halts program
     Halt,
 }
@@ -149,6 +151,3 @@ pub enum RegisterValue {
     /// Example: `STORE *2` stores the value from register 0 into the register whose number is stored in register 2.
     Indirect(usize),
 }
-
-/// Represent label
-pub type Label = usize;

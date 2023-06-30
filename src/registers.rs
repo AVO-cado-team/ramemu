@@ -7,13 +7,14 @@
 //!
 //! ```
 //! use ramemu::registers::Registers;
+//! use ramemu::registers::RegisterId;
 //!
 //! let mut registers = Registers::default();
-//! registers.set(0, 42);
-//! registers.set(1, 24);
+//! registers.set(RegisterId(0), 42);
+//! registers.set(RegisterId(1), 24);
 //!
-//! assert_eq!(registers.get(0), 42);
-//! assert_eq!(registers.get(1), 24);
+//! assert_eq!(registers.get(RegisterId(0)), 42);
+//! assert_eq!(registers.get(RegisterId(1)), 24);
 //! ```
 //!
 //! This module is typically used in combination with other components of an
@@ -33,18 +34,29 @@ use std::iter::FromIterator;
 ///
 /// ```
 /// use ramemu::registers::Registers;
+/// use ramemu::registers::RegisterId;
 ///
 /// let mut registers = Registers::default();
-/// registers.set(0, 42);
-/// registers.set(1, 24);
+/// registers.set(RegisterId(0), 42);
+/// registers.set(RegisterId(1), 24);
 ///
-/// assert_eq!(registers.get(0), 42);
-/// assert_eq!(registers.get(1), 24);
+/// assert_eq!(registers.get(RegisterId(0)), 42);
+/// assert_eq!(registers.get(RegisterId(1)), 24);
 /// ```
 #[derive(Default, Clone, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct Registers<T> {
-    registers: HashMap<usize, T>,
+    registers: HashMap<RegisterId, T>,
+}
+
+/// Represents a register id.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct RegisterId(pub usize);
+
+impl From<usize> for RegisterId {
+    fn from(value: usize) -> Self {
+        RegisterId(value)
+    }
 }
 
 impl<T: Clone + Default> Registers<T> {
@@ -56,12 +68,13 @@ impl<T: Clone + Default> Registers<T> {
     ///
     /// ```
     /// use ramemu::registers::Registers;
+    /// use ramemu::registers::RegisterId;
     ///
     /// let registers: Registers<u8> = Registers::default();
-    /// assert_eq!(registers.get(4), 0);
+    /// assert_eq!(registers.get(RegisterId(4)), 0);
     /// ```
     #[inline]
-    pub fn get(&self, index: usize) -> T {
+    pub fn get(&self, index: RegisterId) -> T {
         self.registers.get(&index).cloned().unwrap_or_default()
     }
     /// Sets the value of the register at the given index.
@@ -70,22 +83,23 @@ impl<T: Clone + Default> Registers<T> {
     ///
     /// ```
     /// use ramemu::registers::Registers;
+    /// use ramemu::registers::RegisterId;
     ///
     /// let mut registers = Registers::default();
-    /// registers.set(0, 42);
-    /// assert_eq!(registers.get(0), 42);
+    /// registers.set(RegisterId(0), 42);
+    /// assert_eq!(registers.get(RegisterId(0)), 42);
     /// ```
     #[inline]
-    pub fn set(&mut self, index: usize, value: T) {
+    pub fn set(&mut self, index: RegisterId, value: T) {
         self.registers.insert(index, value);
     }
 }
 
 impl<T: Clone + Default + Debug> Debug for Registers<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let max_index = *self.registers.keys().max().unwrap_or(&0);
+        let max_index = self.registers.keys().max().unwrap_or(&0.into()).0;
         let vec: Vec<T> = (0..=max_index)
-            .map(|i| self.registers.get(&i).cloned().unwrap_or_default())
+            .map(|i| self.registers.get(&i.into()).cloned().unwrap_or_default())
             .collect();
         Debug::fmt(&vec, f)
     }
@@ -95,14 +109,18 @@ impl<T> FromIterator<T> for Registers<T> {
     #[inline]
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         Registers {
-            registers: iter.into_iter().enumerate().map(|(i, v)| (i, v)).collect(),
+            registers: iter
+                .into_iter()
+                .enumerate()
+                .map(|(i, v)| (RegisterId(i), v))
+                .collect(),
         }
     }
 }
 
-impl<T> FromIterator<(usize, T)> for Registers<T> {
+impl<T> FromIterator<(RegisterId, T)> for Registers<T> {
     #[inline]
-    fn from_iter<I: IntoIterator<Item = (usize, T)>>(iter: I) -> Self {
+    fn from_iter<I: IntoIterator<Item = (RegisterId, T)>>(iter: I) -> Self {
         Registers {
             registers: iter.into_iter().collect(),
         }
@@ -130,18 +148,18 @@ mod tests {
     fn test_set_and_get() {
         let mut registers: Registers<u32> = Registers::default();
 
-        registers.set(0, 42);
-        registers.set(1, 24);
+        registers.set(0.into(), 42);
+        registers.set(1.into(), 24);
 
-        assert_eq!(registers.get(0), 42);
-        assert_eq!(registers.get(1), 24);
+        assert_eq!(registers.get(0.into()), 42);
+        assert_eq!(registers.get(1.into()), 24);
     }
 
     #[test]
     fn test_get_default() {
         let registers: Registers<i32> = Registers::default();
 
-        assert_eq!(registers.get(2), 0);
+        assert_eq!(registers.get(2.into()), 0);
     }
 
     #[test]
@@ -149,19 +167,19 @@ mod tests {
         let input = vec![10, 20, 30];
         let registers: Registers<_> = input.into_iter().collect();
 
-        assert_eq!(registers.get(0), 10);
-        assert_eq!(registers.get(1), 20);
-        assert_eq!(registers.get(2), 30);
+        assert_eq!(registers.get(0.into()), 10);
+        assert_eq!(registers.get(1.into()), 20);
+        assert_eq!(registers.get(2.into()), 30);
     }
 
     #[test]
     fn test_from_iter_tuple() {
-        let input = vec![(0, 10), (1, 20), (2, 30)];
+        let input = vec![(0.into(), 10), (1.into(), 20), (2.into(), 30)];
         let registers: Registers<i32> = input.into_iter().collect();
 
-        assert_eq!(registers.get(0), 10);
-        assert_eq!(registers.get(1), 20);
-        assert_eq!(registers.get(2), 30);
+        assert_eq!(registers.get(0.into()), 10);
+        assert_eq!(registers.get(1.into()), 20);
+        assert_eq!(registers.get(2.into()), 30);
     }
 
     #[test]
@@ -169,9 +187,9 @@ mod tests {
         let input = [10, 20, 30];
         let registers: Registers<_> = input.into();
 
-        assert_eq!(registers.get(0), 10);
-        assert_eq!(registers.get(1), 20);
-        assert_eq!(registers.get(2), 30);
+        assert_eq!(registers.get(0.into()), 10);
+        assert_eq!(registers.get(1.into()), 20);
+        assert_eq!(registers.get(2.into()), 30);
     }
 
     #[test]
@@ -179,18 +197,18 @@ mod tests {
         let input: &[i32] = &[10, 20, 30];
         let registers: Registers<i32> = input.into();
 
-        assert_eq!(registers.get(0), 10);
-        assert_eq!(registers.get(1), 20);
-        assert_eq!(registers.get(2), 30);
+        assert_eq!(registers.get(0.into()), 10);
+        assert_eq!(registers.get(1.into()), 20);
+        assert_eq!(registers.get(2.into()), 30);
     }
 
     #[test]
     fn test_debug_fmt() {
         let mut registers: Registers<u32> = Registers::default();
 
-        registers.set(0, 42);
-        registers.set(1, 24);
-        registers.set(2, 10);
+        registers.set(0.into(), 42);
+        registers.set(1.into(), 24);
+        registers.set(2.into(), 10);
 
         let debug_output = format!("{:?}", registers);
         assert_eq!(debug_output, "[42, 24, 10]");

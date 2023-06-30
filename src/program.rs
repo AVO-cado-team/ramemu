@@ -7,14 +7,38 @@ use rustc_hash::FxHashMap as HashMap;
 use crate::{
     errors::{InterpretError, ParseError},
     parser,
-    stmt::{Label, Op::*, Stmt},
+    stmt::{
+        Op::{self, *},
+        Stmt,
+    },
 };
 
 /// Represents a label id.
-pub type LabelId = usize;
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct LabelId(pub usize);
 
 /// Represents a code address.
-pub type CodeAddress = usize;
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct CodeAddress(pub usize);
+
+impl std::ops::Add<usize> for CodeAddress {
+    type Output = Self;
+    fn add(self, other: usize) -> Self::Output {
+        Self(self.0 + other)
+    }
+}
+
+impl From<usize> for CodeAddress {
+    fn from(value: usize) -> Self {
+        CodeAddress(value)
+    }
+}
+
+impl From<usize> for LabelId {
+    fn from(value: usize) -> Self {
+        LabelId(value)
+    }
+}
 
 /// Represents a program code.
 ///
@@ -41,18 +65,19 @@ impl Program {
     ///
     /// ```
     /// use ramemu::program::Program;
+    /// use ramemu::program::{LabelId, CodeAddress};
     /// use ramemu::stmt::Stmt;
     /// use ramemu::stmt::Op::*;
     ///
     /// let instructions = vec![
-    ///     Stmt::new(Label(0), 1),
-    ///     Stmt::new(Label(1), 2),
+    ///     Stmt::new(Label(LabelId(0)), 1),
+    ///     Stmt::new(Label(LabelId(1)), 2),
     /// ];
     ///
     /// let program = Program::from(instructions).unwrap();
     ///
-    /// assert_eq!(program.labels.get(&0), Some(&0));
-    /// assert_eq!(program.labels.get(&1), Some(&1));
+    /// assert_eq!(program.labels.get(&LabelId(0)), Some(&CodeAddress(0)));
+    /// assert_eq!(program.labels.get(&LabelId(1)), Some(&CodeAddress(1)));
     /// ```
     pub fn from<T>(instructions: T) -> Result<Program, InterpretError>
     where
@@ -61,11 +86,12 @@ impl Program {
         let instructions: Vec<Stmt> = instructions.into_iter().collect();
 
         // TODO: Panic if duplicate label ids.
-        let labels = instructions
+        let labels: HashMap<LabelId, CodeAddress> = instructions
             .iter()
             .enumerate()
+            .map(|(i, stmt)| (CodeAddress(i), stmt))
             .filter_map(|(addr, stmt)| match stmt.op {
-                Label(id) => Some((id, addr)),
+                Op::Label(id) => Some((id, addr)),
                 _ => None,
             })
             .collect();
@@ -87,8 +113,8 @@ impl Program {
 
         // add labels to the label map
         for (pc, stmt) in instructions.iter().enumerate() {
-            if let Label(id) = stmt.op {
-                if labels.insert(id, pc).is_some() {
+            if let Op::Label(id) = stmt.op {
+                if labels.insert(id, CodeAddress(pc)).is_some() {
                     return Err(ParseError::LabelIsNotValid(stmt.line));
                 }
             }
@@ -113,15 +139,15 @@ impl Program {
     ///
     /// If the index is out of bounds, returns `None`.
     #[inline]
-    pub fn get(&self, index: usize) -> Option<&Stmt> {
-        self.instructions.get(index)
+    pub fn get(&self, index: CodeAddress) -> Option<&Stmt> {
+        self.instructions.get(index.0)
     }
 
     /// Decodes the label into the instruction index.
     ///
     /// If the label is not found, returns `None`.
     #[inline]
-    pub fn decode_label(&self, label: Label) -> Option<CodeAddress> {
+    pub fn decode_label(&self, label: LabelId) -> Option<CodeAddress> {
         self.labels.get(&label).copied()
     }
 }
@@ -134,10 +160,10 @@ mod tests {
     fn get_test_program() -> Program {
         let instructions = vec![
             Stmt::new(Load(Value::Pure(42)), 1),
-            Stmt::new(Label(0), 2),
+            Stmt::new(Op::Label(0.into()), 2),
             Stmt::new(Add(Value::Register(RegisterValue::Direct(0))), 3),
             Stmt::new(Sub(Value::Register(RegisterValue::Direct(1))), 4),
-            Stmt::new(Jump(0), 5),
+            Stmt::new(Jump(0.into()), 5),
         ];
         Program::from(instructions).unwrap()
     }
@@ -145,21 +171,21 @@ mod tests {
     #[test]
     fn init_labels_test() {
         let program = get_test_program();
-        assert_eq!(program.labels.get(&0), Some(&1));
+        assert_eq!(program.labels.get(&LabelId(0)), Some(&CodeAddress(1)));
     }
 
     #[test]
     fn get_instruction_test() {
         let program = get_test_program();
-        assert_eq!(program.get(0), Some(&Stmt::new(Load(Value::Pure(42)), 1)));
-        assert_eq!(program.get(1), Some(&Stmt::new(Label(0), 2)));
-        assert_eq!(program.get(6), None);
+        assert_eq!(program.get(0.into()), Some(&Stmt::new(Load(Value::Pure(42)), 1)));
+        assert_eq!(program.get(1.into()), Some(&Stmt::new(Op::Label(0.into()), 2)));
+        assert_eq!(program.get(6.into()), None);
     }
 
     #[test]
     fn decode_label_test() {
         let program = get_test_program();
-        assert_eq!(program.decode_label(0), Some(1));
-        assert_eq!(program.decode_label(1), None);
+        assert_eq!(program.decode_label(0.into()), Some(CodeAddress(1)));
+        assert_eq!(program.decode_label(1.into()), None);
     }
 }
