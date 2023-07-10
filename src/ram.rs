@@ -74,6 +74,10 @@ use crate::stmt::RegisterValue;
 use crate::stmt::Stmt;
 use crate::stmt::Value;
 
+use crate::errors::InterpretErrorKind::{
+    DivisionByZero, Halted, IOError, InvalidInput, InvalidLiteral, SegmentationFault, UnknownLabel,
+};
+
 /// The [`Ram`] struct represents a Random Access Machine (RAM).
 ///
 /// It holds the program, registers, program counter, line number, halt state, error state, input reader, and output writer.
@@ -137,9 +141,12 @@ impl Ram {
     pub fn step(&mut self) -> Result<(), InterpretError> {
         let result = self.eval_current();
 
-        match result {
-            Ok(next_pc) => self.pc = next_pc,
-            Err(_) => self.halt = true,
+        match &result {
+            &Ok(next_pc) => self.pc = next_pc,
+            Err(error) => {
+                self.error = Some(error.clone());
+                self.halt = true;
+            }
         };
 
         result.map(|_| ())
@@ -170,7 +177,7 @@ impl Ram {
                 let index: usize = self
                     .get_with_register(value)?
                     .try_into()
-                    .map_err(|_| InterpretError::SegmentationFault(self.line))?;
+                    .map_err(|_| InterpretError::new(SegmentationFault, self.line))?;
                 self.registers.set(RegisterId(index), self.first());
             }
             Add(value) => self.set_first(self.first() + self.get_with_value(value)?),
@@ -180,21 +187,21 @@ impl Ram {
                 self.set_first(
                     self.first()
                         .checked_div(self.get_with_value(value)?)
-                        .ok_or(InterpretError::DivisionByZero(self.line))?,
+                        .ok_or(InterpretError::new(DivisionByZero, self.line))?,
                 );
             }
             Jump(label) => {
                 next_pc = self
                     .program
                     .decode_label(label)
-                    .ok_or(InterpretError::UnknownLabel(self.line))?;
+                    .ok_or(InterpretError::new(UnknownLabel, self.line))?;
             }
             JumpIfZero(label) => {
                 if self.first() == 0 {
                     next_pc = self
                         .program
                         .decode_label(label)
-                        .ok_or(InterpretError::UnknownLabel(self.line))?;
+                        .ok_or(InterpretError::new(UnknownLabel, self.line))?;
                 }
             }
             JumpGreatherZero(label) => {
@@ -202,27 +209,27 @@ impl Ram {
                     next_pc = self
                         .program
                         .decode_label(label)
-                        .ok_or(InterpretError::UnknownLabel(self.line))?;
+                        .ok_or(InterpretError::new(UnknownLabel, self.line))?;
                 }
             }
             Output(value) => {
                 let value = self.get_with_value(value)?;
                 write!(&mut self.writer, "{value}")
-                    .map_err(|_| InterpretError::IOError(self.line))?;
+                    .map_err(|_| InterpretError::new(IOError, self.line))?;
             }
             Input(value) => {
                 let mut input = String::new();
                 self.reader
                     .read_line(&mut input)
-                    .map_err(|_| InterpretError::IOError(self.line))?;
+                    .map_err(|_| InterpretError::new(IOError, self.line))?;
                 let index: usize = self
                     .get_with_register(value)?
                     .try_into()
-                    .map_err(|_| InterpretError::SegmentationFault(self.line))?;
+                    .map_err(|_| InterpretError::new(SegmentationFault, self.line))?;
                 self.registers.set(
                     RegisterId(index),
                     input.trim().parse().map_err(|_| {
-                        InterpretError::InvalidInput(self.line, input.trim().into())
+                        InterpretError::new(InvalidInput(input.trim().into()), self.line)
                     })?,
                 );
             }
@@ -234,11 +241,11 @@ impl Ram {
 
     fn eval_current(&mut self) -> Result<CodeAddress, InterpretError> {
         if self.halt {
-            return Err(InterpretError::Halted(self.line));
+            return Err(InterpretError::new(Halted, self.line));
         }
 
         let Some(&stmt) = self.program.get(self.pc) else {
-            return Err(InterpretError::SegmentationFault(self.line));
+            return Err(InterpretError::new(SegmentationFault, self.line));
         };
 
         self.eval(stmt)
@@ -249,7 +256,7 @@ impl Ram {
         match value {
             Value::Pure(index) => (index)
                 .try_into()
-                .map_err(|_| InterpretError::InvalidLiteral(self.line)),
+                .map_err(|_| InterpretError::new(InvalidLiteral, self.line)),
             Value::Register(RegisterValue::Direct(index)) => self.get::<1>(index),
             Value::Register(RegisterValue::Indirect(index)) => self.get::<2>(index),
         }
@@ -277,7 +284,7 @@ impl Ram {
         if N == 0 {
             return index
                 .try_into()
-                .map_err(|_| InterpretError::InvalidLiteral(self.line));
+                .map_err(|_| InterpretError::new(InvalidLiteral, self.line));
         }
 
         let mut index = index;
@@ -286,7 +293,7 @@ impl Ram {
                 .registers
                 .get(RegisterId(index))
                 .try_into()
-                .map_err(|_| InterpretError::SegmentationFault(self.line))?;
+                .map_err(|_| InterpretError::new(SegmentationFault, self.line))?;
         }
         Ok(self.registers.get(RegisterId(index)))
     }
