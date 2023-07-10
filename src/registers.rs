@@ -74,8 +74,8 @@ impl<T: Clone + Default> Registers<T> {
     /// assert_eq!(registers.get(RegisterId(4)), 0);
     /// ```
     #[inline]
-    pub fn get(&self, index: RegisterId) -> T {
-        self.registers.get(&index).cloned().unwrap_or_default()
+    pub fn get(&self, index: impl Into<RegisterId>) -> T {
+        self.registers.get(&index.into()).cloned().unwrap_or_default()
     }
     /// Sets the value of the register at the given index.
     ///
@@ -90,8 +90,8 @@ impl<T: Clone + Default> Registers<T> {
     /// assert_eq!(registers.get(RegisterId(0)), 42);
     /// ```
     #[inline]
-    pub fn set(&mut self, index: RegisterId, value: T) {
-        self.registers.insert(index, value);
+    pub fn set(&mut self, index: impl Into<RegisterId>, value: T) {
+        self.registers.insert(index.into(), value);
     }
 }
 
@@ -148,18 +148,18 @@ mod tests {
     fn test_set_and_get() {
         let mut registers: Registers<u32> = Registers::default();
 
-        registers.set(0.into(), 42);
-        registers.set(1.into(), 24);
+        registers.set(0, 42);
+        registers.set(1, 24);
 
-        assert_eq!(registers.get(0.into()), 42);
-        assert_eq!(registers.get(1.into()), 24);
+        assert_eq!(registers.get(0), 42);
+        assert_eq!(registers.get(1), 24);
     }
 
     #[test]
     fn test_get_default() {
         let registers: Registers<i32> = Registers::default();
 
-        assert_eq!(registers.get(2.into()), 0);
+        assert_eq!(registers.get(2), 0);
     }
 
     #[test]
@@ -167,9 +167,9 @@ mod tests {
         let input = vec![10, 20, 30];
         let registers: Registers<_> = input.into_iter().collect();
 
-        assert_eq!(registers.get(0.into()), 10);
-        assert_eq!(registers.get(1.into()), 20);
-        assert_eq!(registers.get(2.into()), 30);
+        assert_eq!(registers.get(0), 10);
+        assert_eq!(registers.get(1), 20);
+        assert_eq!(registers.get(2), 30);
     }
 
     #[test]
@@ -177,9 +177,9 @@ mod tests {
         let input = vec![(0.into(), 10), (1.into(), 20), (2.into(), 30)];
         let registers: Registers<i32> = input.into_iter().collect();
 
-        assert_eq!(registers.get(0.into()), 10);
-        assert_eq!(registers.get(1.into()), 20);
-        assert_eq!(registers.get(2.into()), 30);
+        assert_eq!(registers.get(0), 10);
+        assert_eq!(registers.get(1), 20);
+        assert_eq!(registers.get(2), 30);
     }
 
     #[test]
@@ -187,9 +187,9 @@ mod tests {
         let input = [10, 20, 30];
         let registers: Registers<_> = input.into();
 
-        assert_eq!(registers.get(0.into()), 10);
-        assert_eq!(registers.get(1.into()), 20);
-        assert_eq!(registers.get(2.into()), 30);
+        assert_eq!(registers.get(0), 10);
+        assert_eq!(registers.get(1), 20);
+        assert_eq!(registers.get(2), 30);
     }
 
     #[test]
@@ -197,18 +197,18 @@ mod tests {
         let input: &[i32] = &[10, 20, 30];
         let registers: Registers<i32> = input.into();
 
-        assert_eq!(registers.get(0.into()), 10);
-        assert_eq!(registers.get(1.into()), 20);
-        assert_eq!(registers.get(2.into()), 30);
+        assert_eq!(registers.get(0), 10);
+        assert_eq!(registers.get(1), 20);
+        assert_eq!(registers.get(2), 30);
     }
 
     #[test]
     fn test_debug_fmt() {
         let mut registers: Registers<u32> = Registers::default();
 
-        registers.set(0.into(), 42);
-        registers.set(1.into(), 24);
-        registers.set(2.into(), 10);
+        registers.set(0, 42);
+        registers.set(1, 24);
+        registers.set(2, 10);
 
         let debug_output = format!("{:?}", registers);
         assert_eq!(debug_output, "[42, 24, 10]");

@@ -91,7 +91,7 @@ impl Ram {
         Ram {
             program,
             registers: [0; 100].into(),
-            pc: CodeAddress(0),
+            pc: CodeAddress::default(),
             line: 0,
             halt: false,
             error: None,
@@ -388,6 +388,8 @@ mod tests {
     use std::io::{Result as IoResult, Write};
     use std::rc::Rc;
 
+    use crate::program::LabelId;
+
     use super::*;
     use std::io::BufReader;
     use std::io::BufWriter;
@@ -431,7 +433,7 @@ mod tests {
         let ram = Ram::new(program.clone(), Box::new(reader), Box::new(writer));
 
         assert_eq!(ram.program, program);
-        assert_eq!(ram.pc, 0.into());
+        assert_eq!(ram.pc, CodeAddress(0));
         assert_eq!(ram.line, 0);
         assert!(!ram.halt);
         assert_eq!(ram.error, None);
@@ -447,7 +449,7 @@ mod tests {
         let mut ram = Ram::new(program, Box::new(reader), Box::new(writer));
         ram.run().unwrap();
 
-        assert_eq!(ram.get_registers().get(0.into()), 4);
+        assert_eq!(ram.get_registers().get(0), 4);
         assert_eq!(ram.pc, 4.into());
         assert_eq!(ram.line, 4);
         assert!(ram.halt);
@@ -464,12 +466,12 @@ mod tests {
         let mut ram = Ram::new(program, Box::new(reader), Box::new(writer));
 
         assert_eq!(ram.step(), Ok(()));
-        assert_eq!(ram.get_registers().get(0.into()), 2);
+        assert_eq!(ram.get_registers().get(0), 2);
         assert_eq!(ram.pc, 1.into());
         assert_eq!(ram.line, 1);
 
         assert_eq!(ram.step(), Ok(()));
-        assert_eq!(ram.get_registers().get(0.into()), 4);
+        assert_eq!(ram.get_registers().get(0), 4);
         assert_eq!(ram.pc, 2.into());
         assert_eq!(ram.line, 2);
 
@@ -504,7 +506,7 @@ mod tests {
             Stmt::new(Mult(Value::Pure(2)), 4),
             Stmt::new(Div(Value::Pure(2)), 5),
             Stmt::new(Halt, 6),
-            Stmt::new(Label(0.into()), 7),
+            Stmt::new(Label(LabelId(0)), 7),
         ])
         .unwrap();
 
@@ -516,27 +518,27 @@ mod tests {
 
         // Test Load
         assert_eq!(ram.eval(Stmt::new(Load(Value::Pure(2)), 1)), Ok(1.into()));
-        assert_eq!(ram.get_registers().get(0.into()), 2);
+        assert_eq!(ram.get_registers().get(0), 2);
 
         // Test Add
         assert_eq!(ram.eval(Stmt::new(Add(Value::Pure(3)), 2)), Ok(1.into()));
-        assert_eq!(ram.get_registers().get(0.into()), 5);
+        assert_eq!(ram.get_registers().get(0), 5);
 
         // Test Sub
         assert_eq!(ram.eval(Stmt::new(Sub(Value::Pure(1)), 3)), Ok(1.into()));
-        assert_eq!(ram.get_registers().get(0.into()), 4);
+        assert_eq!(ram.get_registers().get(0), 4);
 
         // Test Mult
         assert_eq!(ram.eval(Stmt::new(Mult(Value::Pure(2)), 4)), Ok(1.into()));
-        assert_eq!(ram.get_registers().get(0.into()), 8);
+        assert_eq!(ram.get_registers().get(0), 8);
 
         // Test Jump
-        assert_eq!(ram.eval(Stmt::new(Jump(0.into()), 5)), Ok(6.into()));
-        assert_eq!(ram.get_registers().get(0.into()), 8);
+        assert_eq!(ram.eval(Stmt::new(Jump(LabelId(0)), 5)), Ok(6.into()));
+        assert_eq!(ram.get_registers().get(0), 8);
 
         // Test Div
         assert_eq!(ram.eval(Stmt::new(Div(Value::Pure(2)), 5)), Ok(1.into()));
-        assert_eq!(ram.get_registers().get(0.into()), 4);
+        assert_eq!(ram.get_registers().get(0), 4);
 
         // Test Halt
         assert_eq!(ram.eval(Stmt::new(Halt, 6)), Ok(1.into()));

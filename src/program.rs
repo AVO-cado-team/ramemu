@@ -139,16 +139,16 @@ impl Program {
     ///
     /// If the index is out of bounds, returns `None`.
     #[inline]
-    pub fn get(&self, index: CodeAddress) -> Option<&Stmt> {
-        self.instructions.get(index.0)
+    pub fn get(&self, index: impl Into<CodeAddress>) -> Option<&Stmt> {
+        self.instructions.get(index.into().0)
     }
 
     /// Decodes the label into the instruction index.
     ///
     /// If the label is not found, returns `None`.
     #[inline]
-    pub fn decode_label(&self, label: LabelId) -> Option<CodeAddress> {
-        self.labels.get(&label).copied()
+    pub fn decode_label(&self, label: impl Into<LabelId>) -> Option<CodeAddress> {
+        self.labels.get(&label.into()).copied()
     }
 }
 
@@ -177,15 +177,15 @@ mod tests {
     #[test]
     fn get_instruction_test() {
         let program = get_test_program();
-        assert_eq!(program.get(0.into()), Some(&Stmt::new(Load(Value::Pure(42)), 1)));
-        assert_eq!(program.get(1.into()), Some(&Stmt::new(Op::Label(0.into()), 2)));
-        assert_eq!(program.get(6.into()), None);
+        assert_eq!(program.get(0), Some(&Stmt::new(Load(Value::Pure(42)), 1)));
+        assert_eq!(program.get(1), Some(&Stmt::new(Op::Label(0.into()), 2)));
+        assert_eq!(program.get(6), None);
     }
 
     #[test]
     fn decode_label_test() {
         let program = get_test_program();
-        assert_eq!(program.decode_label(0.into()), Some(CodeAddress(1)));
-        assert_eq!(program.decode_label(1.into()), None);
+        assert_eq!(program.decode_label(0), Some(CodeAddress(1)));
+        assert_eq!(program.decode_label(1), None);
     }
 }

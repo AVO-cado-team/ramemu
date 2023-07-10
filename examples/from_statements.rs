@@ -18,5 +18,5 @@ fn main() {
     let mut ram = Ram::new(program, Box::new(reader), Box::new(writer));
 
     ram.run().unwrap();
-    assert_eq!(ram.get_registers().get(0.into()), 4);
+    assert_eq!(ram.get_registers().get(0), 4);
 }
