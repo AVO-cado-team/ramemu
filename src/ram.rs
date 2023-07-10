@@ -225,7 +225,7 @@ impl Ram {
         }
 
         let Some(&stmt) = self.program.get(self.pc) else {
-          return Err(InterpretError::SegmentationFault(self.line));
+            return Err(InterpretError::SegmentationFault(self.line));
         };
 
         self.eval(stmt)

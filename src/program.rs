@@ -5,7 +5,7 @@
 use rustc_hash::FxHashMap as HashMap;
 
 use crate::{
-    errors::{InterpretError, ParseError},
+    errors::{InterpretError, ParseError, ParseErrorKind},
     parser,
     stmt::{
         Op::{self, *},
@@ -115,7 +115,10 @@ impl Program {
         for (pc, stmt) in instructions.iter().enumerate() {
             if let Op::Label(id) = stmt.op {
                 if labels.insert(id, CodeAddress(pc)).is_some() {
-                    return Err(ParseError::LabelIsNotValid(stmt.line));
+                    return Err(ParseError {
+                        kind: ParseErrorKind::LabelIsNotValid,
+                        line: stmt.line,
+                    });
                 }
             }
         }
@@ -124,7 +127,10 @@ impl Program {
         for stmt in instructions.iter() {
             if let Jump(id) | JumpIfZero(id) | JumpGreatherZero(id) = stmt.op {
                 if !labels.contains_key(&id) {
-                    return Err(ParseError::LabelIsNotValid(stmt.line));
+                    return Err(ParseError {
+                        kind: ParseErrorKind::LabelIsNotValid,
+                        line: stmt.line,
+                    });
                 }
             }
         }

@@ -75,7 +75,10 @@ impl<T: Clone + Default> Registers<T> {
     /// ```
     #[inline]
     pub fn get(&self, index: impl Into<RegisterId>) -> T {
-        self.registers.get(&index.into()).cloned().unwrap_or_default()
+        self.registers
+            .get(&index.into())
+            .cloned()
+            .unwrap_or_default()
     }
     /// Sets the value of the register at the given index.
     ///
