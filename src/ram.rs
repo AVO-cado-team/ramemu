@@ -1,8 +1,8 @@
 //! # RAM Machine Simulation
 //!
 //! This module provides a [`Ram`] struct and related functionalities
-//! for simulating the behavior of a RAM (Random Access Machine) machine.
 //! The RAM machine is a theoretical model of computation that consists of an
+//! for simulating the behavior of a RAM (Random Access Machine) machine.
 //! infinite array of memory cells, a finite set of registers, and a program counter.
 //! The [`Ram`] struct holds the program, registers, program counter, line
 //! number, halt state, error state, input reader, and output writer.
@@ -38,12 +38,14 @@
 //! use std::io::BufReader;
 //! use std::io::BufWriter;
 //!
-//! let program = Program::from(vec![
+//! let instructions = vec![
 //!   Stmt::new(Load(Value::Pure(2)), 1),
 //!   Stmt::new(Add(Value::Pure(2)), 3),
 //!   Stmt::new(Output(Value::Pure(0)), 4),
 //!   Stmt::new(Halt, 5),
-//! ]).unwrap();
+//! ];
+//! let labels = Default::default();
+//! let program = Program::from(instructions, labels);
 //!
 //! let reader = BufReader::new(std::io::empty());
 //! let writer = BufWriter::new(std::io::sink());
@@ -65,7 +67,9 @@ use crate::program::CodeAddress;
 use crate::program::Program;
 use crate::registers::RegisterId;
 use crate::registers::Registers;
-use crate::stmt::Op::*;
+use crate::stmt::Op::{
+    Add, Div, Halt, Input, Jump, JumpGreatherZero, JumpIfZero, Load, Mult, Output, Store, Sub,
+};
 use crate::stmt::RegisterValue;
 use crate::stmt::Stmt;
 use crate::stmt::Value;
@@ -87,8 +91,9 @@ pub struct Ram {
 impl Ram {
     /// Creates a new [`Ram`] instance with the given program, input reader, and output writer.
     #[inline]
+    #[must_use]
     pub fn new(program: Program, reader: Box<dyn BufRead>, writer: Box<dyn Write>) -> Self {
-        Ram {
+        Self {
             program,
             registers: [0; 100].into(),
             pc: CodeAddress::default(),
@@ -102,17 +107,21 @@ impl Ram {
 
     /// Returns a reference to the registers of the [`Ram`] instance.
     #[inline]
+    #[must_use]
     pub fn get_registers(&self) -> &Registers<i64> {
         &self.registers
     }
 
     /// Returns the current instruction of the program as an [`Option<Stmt>`].
     #[inline]
+    #[must_use]
     pub fn get_current_instruction(&self) -> Option<&Stmt> {
         self.program.get(self.pc)
     }
 
     /// Runs the program until it halts or encounters an error.
+    /// # Errors
+    /// Returns an [`InterpretError`] if the program encounters an error.
     pub fn run(&mut self) -> Result<(), InterpretError> {
         while !self.halt {
             self.step()?;
@@ -122,6 +131,8 @@ impl Ram {
 
     /// Executes one step of the program and advances the program counter.
     // Maybe, it should return `R0` as `Ok`?
+    /// # Errors
+    /// Returns an [`InterpretError`] if the program encounters an error.
     #[inline]
     pub fn step(&mut self) -> Result<(), InterpretError> {
         let result = self.eval_current();
@@ -137,6 +148,7 @@ impl Ram {
     /// Returns the current error state of the [`Ram`] instance as an
     /// [`Option<InterpretError>`].
     #[inline]
+    #[must_use]
     pub fn get_error(&self) -> Option<&InterpretError> {
         self.error.as_ref()
     }
@@ -145,13 +157,14 @@ impl Ram {
     ///
     /// Evaluates the given statement without affecting the program counter.
     /// Changes `line`
+    /// # Errors
+    /// Returns an [`InterpretError`] if the program encounters an error.
     #[inline]
     pub fn eval(&mut self, stmt: Stmt) -> Result<CodeAddress, InterpretError> {
         self.line = stmt.line;
         let mut next_pc = self.pc + 1;
 
         match stmt.op {
-            Label(..) => {}
             Load(value) => self.set_first(self.get_with_value(value)?),
             Store(value) => {
                 let index: usize = self
@@ -194,8 +207,8 @@ impl Ram {
             }
             Output(value) => {
                 let value = self.get_with_value(value)?;
-                write!(&mut self.writer, "{}", value)
-                    .map_err(|_| InterpretError::IOError(self.line))?
+                write!(&mut self.writer, "{value}")
+                    .map_err(|_| InterpretError::IOError(self.line))?;
             }
             Input(value) => {
                 let mut input = String::new();
@@ -273,7 +286,7 @@ impl Ram {
                 .registers
                 .get(RegisterId(index))
                 .try_into()
-                .map_err(|_| InterpretError::SegmentationFault(self.line))?
+                .map_err(|_| InterpretError::SegmentationFault(self.line))?;
         }
         Ok(self.registers.get(RegisterId(index)))
     }
@@ -288,7 +301,7 @@ impl Debug for Ram {
             .field("line", &self.line)
             .field("halt", &self.halt)
             .field("error", &self.error)
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 
@@ -296,10 +309,10 @@ impl Iterator for Ram {
     type Item = RamState;
     fn next(&mut self) -> Option<Self::Item> {
         self.step().ok().and_then(|_| {
-            if !self.halt {
-                Some(RamState::from(self))
-            } else {
+            if self.halt {
                 None
+            } else {
+                Some(RamState::from(self))
             }
         })
     }
@@ -368,6 +381,7 @@ impl From<&mut Ram> for RamState {
 
 impl RamState {
     /// Creates a new [`Ram`] instance from the given [`RamState`], input reader, and output writer.
+    #[must_use]
     pub fn create_ram(self, reader: Box<dyn BufRead>, writer: Box<dyn Write>) -> Ram {
         Ram {
             program: self.program,
@@ -388,8 +402,6 @@ mod tests {
     use std::io::{Result as IoResult, Write};
     use std::rc::Rc;
 
-    use crate::program::LabelId;
-
     use super::*;
     use std::io::BufReader;
     use std::io::BufWriter;
@@ -399,8 +411,8 @@ mod tests {
     }
 
     impl CustomWriter {
-        pub fn new(buffer: Rc<RefCell<Vec<u8>>>) -> CustomWriter {
-            CustomWriter { buffer }
+        pub fn new(buffer: Rc<RefCell<Vec<u8>>>) -> Self {
+            Self { buffer }
         }
     }
 
@@ -415,19 +427,20 @@ mod tests {
         }
     }
 
-    fn create_test_program() -> Program {
-        Program::from(vec![
+    fn get_test_program() -> Program {
+        let instructions = vec![
             Stmt::new(Load(Value::Pure(2)), 1),
             Stmt::new(Add(Value::Pure(2)), 2),
             Stmt::new(Output(Value::Pure(4)), 3),
             Stmt::new(Halt, 4),
-        ])
-        .unwrap()
+        ];
+        let labels = Default::default();
+        Program::from(instructions, labels)
     }
 
     #[test]
     fn ram_new_test() {
-        let program = create_test_program();
+        let program = get_test_program();
         let reader = BufReader::new(std::io::empty());
         let writer = BufWriter::new(std::io::sink());
         let ram = Ram::new(program.clone(), Box::new(reader), Box::new(writer));
@@ -441,7 +454,7 @@ mod tests {
 
     #[test]
     fn ram_run_test() {
-        let program = create_test_program();
+        let program = get_test_program();
         let reader = BufReader::new(std::io::empty());
         let output = Vec::new();
         let writer = BufWriter::new(output);
@@ -458,7 +471,7 @@ mod tests {
 
     #[test]
     fn ram_step_test() {
-        let program = create_test_program();
+        let program = get_test_program();
         let reader = BufReader::new(std::io::empty());
         let output = Vec::new();
         let writer = BufWriter::new(output);
@@ -486,7 +499,7 @@ mod tests {
     }
     #[test]
     fn ram_output_test() {
-        let program = create_test_program();
+        let program = get_test_program();
         let reader = BufReader::new(std::io::empty());
         let output = Rc::new(RefCell::new(Vec::new()));
         let writer = CustomWriter::new(output.clone());
@@ -499,16 +512,16 @@ mod tests {
     }
     #[test]
     fn ram_eval_test() {
-        let program = Program::from(vec![
+        let instructions = vec![
             Stmt::new(Load(Value::Pure(2)), 1),
             Stmt::new(Add(Value::Pure(3)), 2),
             Stmt::new(Sub(Value::Pure(1)), 3),
             Stmt::new(Mult(Value::Pure(2)), 4),
             Stmt::new(Div(Value::Pure(2)), 5),
             Stmt::new(Halt, 6),
-            Stmt::new(Label(LabelId(0)), 7),
-        ])
-        .unwrap();
+        ];
+        let labels = Default::default();
+        let program = Program::from(instructions, labels);
 
         let reader = BufReader::new(std::io::empty());
         let output = Vec::new();
@@ -530,10 +543,6 @@ mod tests {
 
         // Test Mult
         assert_eq!(ram.eval(Stmt::new(Mult(Value::Pure(2)), 4)), Ok(1.into()));
-        assert_eq!(ram.get_registers().get(0), 8);
-
-        // Test Jump
-        assert_eq!(ram.eval(Stmt::new(Jump(LabelId(0)), 5)), Ok(6.into()));
         assert_eq!(ram.get_registers().get(0), 8);
 
         // Test Div

@@ -63,7 +63,7 @@ halt
 "#;
 
 fn main() {
-    let program = Program::from_source(SOURCE).unwrap();
+    let program = Program::from_source(SOURCE).expect("Program is correct.");
 
     let mut ram = Ram::new(
         program,
@@ -73,6 +73,6 @@ fn main() {
 
     match ram.run() {
         Ok(_) => println!("\nProgram executed successfully"),
-        Err(e) => println!("\nError during execution: {:?}", e),
+        Err(e) => println!("\nError during execution: {e:?}"),
     }
 }

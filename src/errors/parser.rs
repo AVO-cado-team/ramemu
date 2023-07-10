@@ -20,10 +20,10 @@ pub enum ParseErrorKind {
 /// Represents various parsing errors that may occur during parsing and validating input.
 #[derive(Debug, PartialEq, Eq, Clone, Hash, PartialOrd, Ord)]
 pub struct ParseError {
-    /// The line number from the source code.
-    pub line: usize,
     /// Kind of the error.
     pub kind: ParseErrorKind,
+    /// The line number from the source code.
+    pub line: usize,
 }
 
 /// Represents various invalid argument errors that may occur during parsing and validating input.
@@ -47,18 +47,18 @@ impl ParseErrorKind {
     /// Creates a new `ParseError` for the `PureArgumentIsNotAllowed` case.
     #[inline]
     pub(crate) fn pure_argument_not_allowed() -> Self {
-        ParseErrorKind::ArgumentIsNotValid(InvalidArgument::PureArgumentIsNotAllowed)
+        Self::ArgumentIsNotValid(InvalidArgument::PureArgumentIsNotAllowed)
     }
 
     /// Creates a new `ParseError` for the `ArgumentIsNotValid` case.
     #[inline]
     pub(crate) fn not_valid_argument() -> Self {
-        ParseErrorKind::ArgumentIsNotValid(InvalidArgument::ArgumentIsNotValid)
+        Self::ArgumentIsNotValid(InvalidArgument::ArgumentIsNotValid)
     }
     /// Creates a new `ParseError` for the `ArgumentValueMustBeNumberic` case.
     #[inline]
     pub(crate) fn argument_value_must_be_numeric() -> Self {
-        ParseErrorKind::ArgumentIsNotValid(InvalidArgument::ArgumentValueMustBeNumberic)
+        Self::ArgumentIsNotValid(InvalidArgument::ArgumentValueMustBeNumberic)
     }
 }
 

@@ -85,8 +85,9 @@ impl Ord for Stmt {
 
 impl Stmt {
     /// Creates a new statement with the specified operation and line number.
-    pub fn new(op: Op, line: usize) -> Stmt {
-        Stmt { op, line }
+    #[must_use]
+    pub fn new(op: Op, line: usize) -> Self {
+        Self { op, line }
     }
 }
 
@@ -115,8 +116,6 @@ pub enum Op {
     Input(RegisterValue),
     /// Outputs value to `writer`
     Output(Value),
-    /// Represents label
-    Label(LabelId),
     /// Halts program
     Halt,
 }

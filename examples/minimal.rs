@@ -8,7 +8,7 @@ fn main() {
       HALT
     "#;
 
-    let program = Program::from_source(source).unwrap();
+    let program = Program::from_source(source).expect("Program is correct");
     let mut ram = Ram::new(
         program,
         Box::new(BufReader::new(stdin())),
@@ -17,6 +17,6 @@ fn main() {
 
     match ram.run() {
         Ok(_) => println!("Program executed successfully"),
-        Err(e) => println!("Error during execution: {:?}", e),
+        Err(e) => println!("Error during execution: {e:?}"),
     }
 }

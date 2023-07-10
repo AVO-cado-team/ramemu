@@ -55,7 +55,7 @@ pub struct RegisterId(pub usize);
 
 impl From<usize> for RegisterId {
     fn from(value: usize) -> Self {
-        RegisterId(value)
+        Self(value)
     }
 }
 
@@ -111,7 +111,7 @@ impl<T: Clone + Default + Debug> Debug for Registers<T> {
 impl<T> FromIterator<T> for Registers<T> {
     #[inline]
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
-        Registers {
+        Self {
             registers: iter
                 .into_iter()
                 .enumerate()
@@ -124,7 +124,7 @@ impl<T> FromIterator<T> for Registers<T> {
 impl<T> FromIterator<(RegisterId, T)> for Registers<T> {
     #[inline]
     fn from_iter<I: IntoIterator<Item = (RegisterId, T)>>(iter: I) -> Self {
-        Registers {
+        Self {
             registers: iter.into_iter().collect(),
         }
     }
@@ -133,13 +133,13 @@ impl<T> FromIterator<(RegisterId, T)> for Registers<T> {
 impl<T, const N: usize> From<[T; N]> for Registers<T> {
     #[inline]
     fn from(value: [T; N]) -> Self {
-        Self::from_iter(value.into_iter())
+        Self::from_iter(value)
     }
 }
 
 impl<T: Clone> From<&[T]> for Registers<T> {
     fn from(value: &[T]) -> Self {
-        Self::from_iter(value.iter().cloned())
+        value.iter().cloned().collect()
     }
 }
 
@@ -213,7 +213,7 @@ mod tests {
         registers.set(1, 24);
         registers.set(2, 10);
 
-        let debug_output = format!("{:?}", registers);
+        let debug_output = format!("{registers:?}");
         assert_eq!(debug_output, "[42, 24, 10]");
     }
 }

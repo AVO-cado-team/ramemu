@@ -4,14 +4,7 @@
 
 use rustc_hash::FxHashMap as HashMap;
 
-use crate::{
-    errors::{InterpretError, ParseError, ParseErrorKind},
-    parser,
-    stmt::{
-        Op::{self, *},
-        Stmt,
-    },
-};
+use crate::{errors::ParseError, parser::parse, stmt::Stmt};
 
 /// Represents a label id.
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -30,13 +23,13 @@ impl std::ops::Add<usize> for CodeAddress {
 
 impl From<usize> for CodeAddress {
     fn from(value: usize) -> Self {
-        CodeAddress(value)
+        Self(value)
     }
 }
 
 impl From<usize> for LabelId {
     fn from(value: usize) -> Self {
-        LabelId(value)
+        Self(value)
     }
 }
 
@@ -64,80 +57,46 @@ impl Program {
     /// # Examples
     ///
     /// ```
+    /// use ramemu::ram::Ram;
     /// use ramemu::program::Program;
-    /// use ramemu::program::{LabelId, CodeAddress};
-    /// use ramemu::stmt::Stmt;
-    /// use ramemu::stmt::Op::*;
-    ///
+    /// use ramemu::stmt::{Op::*, Stmt, Value};
+    /// use std::io::BufReader;
+    /// use std::io::BufWriter;
+
     /// let instructions = vec![
-    ///     Stmt::new(Label(LabelId(0)), 1),
-    ///     Stmt::new(Label(LabelId(1)), 2),
+    ///     Stmt::new(Load(Value::Pure(2)), 1),
+    ///     Stmt::new(Add(Value::Pure(2)), 3),
+    ///     Stmt::new(Output(Value::Pure(0)), 4),
+    ///     Stmt::new(Halt, 5),
     /// ];
-    ///
-    /// let program = Program::from(instructions).unwrap();
-    ///
-    /// assert_eq!(program.labels.get(&LabelId(0)), Some(&CodeAddress(0)));
-    /// assert_eq!(program.labels.get(&LabelId(1)), Some(&CodeAddress(1)));
+    /// let labels = Default::default();
+    /// let program = Program::from(instructions, labels);
     /// ```
-    pub fn from<T>(instructions: T) -> Result<Program, InterpretError>
+    ///
+    /// # Errors
+    ///
+    pub fn from<T>(instructions: T, labels: HashMap<LabelId, CodeAddress>) -> Self
     where
         T: IntoIterator<Item = Stmt>,
     {
-        let instructions: Vec<Stmt> = instructions.into_iter().collect();
-
-        // TODO: Panic if duplicate label ids.
-        let labels: HashMap<LabelId, CodeAddress> = instructions
-            .iter()
-            .enumerate()
-            .map(|(i, stmt)| (CodeAddress(i), stmt))
-            .filter_map(|(addr, stmt)| match stmt.op {
-                Op::Label(id) => Some((id, addr)),
-                _ => None,
-            })
-            .collect();
-
-        Ok(Program {
-            instructions,
+        Self {
+            instructions: instructions.into_iter().collect(),
             labels,
-        })
+        }
     }
 
     /// Creates a new [`Program`] from the source code.
     ///
     /// This method parses the source code, creating a [`Program`] with the resulting
     /// instructions and labels.
-    pub fn from_source(source: &str) -> Result<Program, ParseError> {
-        let stmts: Result<Vec<Stmt>, ParseError> = parser::parse(source).collect();
-        let instructions = stmts?;
-        let mut labels = HashMap::default();
-
-        // add labels to the label map
-        for (pc, stmt) in instructions.iter().enumerate() {
-            if let Op::Label(id) = stmt.op {
-                if labels.insert(id, CodeAddress(pc)).is_some() {
-                    return Err(ParseError {
-                        kind: ParseErrorKind::LabelIsNotValid,
-                        line: stmt.line,
-                    });
-                }
-            }
-        }
-
-        //  check if the jump labels are valid
-        for stmt in instructions.iter() {
-            if let Jump(id) | JumpIfZero(id) | JumpGreatherZero(id) = stmt.op {
-                if !labels.contains_key(&id) {
-                    return Err(ParseError {
-                        kind: ParseErrorKind::LabelIsNotValid,
-                        line: stmt.line,
-                    });
-                }
-            }
-        }
-
-        Ok(Program {
-            instructions,
-            labels,
+    /// # Errors
+    /// If the source code is invalid, returns a [`ParseError`].
+    #[allow(clippy::missing_panics_doc)]
+    pub fn from_source(source: &str) -> Result<Self, ParseError> {
+        parse(source).map_err(|e| {
+            e.into_iter()
+                .next()
+                .expect("Allways has at least one error.")
         })
     }
 
@@ -161,17 +120,17 @@ impl Program {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::stmt::{RegisterValue, Stmt, Value};
+    use crate::stmt::{Op::*, RegisterValue, Stmt, Value};
 
     fn get_test_program() -> Program {
         let instructions = vec![
             Stmt::new(Load(Value::Pure(42)), 1),
-            Stmt::new(Op::Label(0.into()), 2),
-            Stmt::new(Add(Value::Register(RegisterValue::Direct(0))), 3),
-            Stmt::new(Sub(Value::Register(RegisterValue::Direct(1))), 4),
-            Stmt::new(Jump(0.into()), 5),
+            Stmt::new(Add(Value::Register(RegisterValue::Direct(0))), 2),
+            Stmt::new(Sub(Value::Register(RegisterValue::Direct(1))), 3),
+            Stmt::new(Jump(LabelId(0)), 4),
         ];
-        Program::from(instructions).unwrap()
+        let labels = [(LabelId(0), CodeAddress(1))].into_iter().collect();
+        Program::from(instructions, labels)
     }
 
     #[test]
@@ -184,7 +143,7 @@ mod tests {
     fn get_instruction_test() {
         let program = get_test_program();
         assert_eq!(program.get(0), Some(&Stmt::new(Load(Value::Pure(42)), 1)));
-        assert_eq!(program.get(1), Some(&Stmt::new(Op::Label(0.into()), 2)));
+        assert_eq!(program.get(3), Some(&Stmt::new(Jump(LabelId(0)), 4)));
         assert_eq!(program.get(6), None);
     }
 
