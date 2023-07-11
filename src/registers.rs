@@ -121,6 +121,18 @@ impl<T> FromIterator<T> for Registers<T> {
     }
 }
 
+impl<T> AsRef<Self> for Registers<T> {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
+impl<T> AsMut<Self> for Registers<T> {
+    fn as_mut(&mut self) -> &mut Self {
+        self
+    }
+}
+
 impl<T> FromIterator<(RegisterId, T)> for Registers<T> {
     #[inline]
     fn from_iter<I: IntoIterator<Item = (RegisterId, T)>>(iter: I) -> Self {

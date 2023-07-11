@@ -71,6 +71,18 @@ pub struct Stmt {
     pub line: usize,
 }
 
+impl AsRef<Self> for Stmt {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
+impl AsMut<Self> for Stmt {
+    fn as_mut(&mut self) -> &mut Self {
+        self
+    }
+}
+
 impl PartialOrd for Stmt {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.line.cmp(&other.line))
@@ -120,6 +132,18 @@ pub enum Op {
     Halt,
 }
 
+impl AsRef<Self> for Op {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
+impl AsMut<Self> for Op {
+    fn as_mut(&mut self) -> &mut Self {
+        self
+    }
+}
+
 /// Represents a value that can be passed to a statement.
 /// The value can be a pure numeric value or a value stored in a register.
 ///
@@ -149,4 +173,28 @@ pub enum RegisterValue {
     /// Specifies the register to be operated on indirectly.
     /// Example: `STORE *2` stores the value from register 0 into the register whose number is stored in register 2.
     Indirect(usize),
+}
+
+impl AsRef<Self> for Value {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
+impl AsMut<Self> for Value {
+    fn as_mut(&mut self) -> &mut Self {
+        self
+    }
+}
+
+impl AsRef<Self> for RegisterValue {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
+impl AsMut<Self> for RegisterValue {
+    fn as_mut(&mut self) -> &mut Self {
+        self
+    }
 }

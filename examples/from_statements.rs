@@ -1,6 +1,9 @@
 use ramemu::program::Program;
 use ramemu::ram::Ram;
-use ramemu::stmt::{Op::{Add, Halt, Load, Output}, Stmt, Value};
+use ramemu::stmt::{
+    Op::{Add, Halt, Load, Output},
+    Stmt, Value,
+};
 use std::io::BufReader;
 use std::io::BufWriter;
 
@@ -19,5 +22,9 @@ fn main() {
     let mut ram = Ram::new(program, Box::new(reader), Box::new(writer));
 
     ram.run().expect("Failed to run program");
-    assert_eq!(ram.get_registers().get(0), 4, "Value in register 0 should be 4");
+    assert_eq!(
+        ram.get_registers().get(0),
+        4,
+        "Value in register 0 should be 4"
+    );
 }

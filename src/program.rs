@@ -117,6 +117,18 @@ impl Program {
     }
 }
 
+impl AsRef<Self> for Program {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
+impl AsMut<Self> for Program {
+    fn as_mut(&mut self) -> &mut Self {
+        self
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

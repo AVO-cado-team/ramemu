@@ -299,6 +299,18 @@ impl Ram {
     }
 }
 
+impl AsRef<Self> for Ram {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
+impl AsMut<Self> for Ram {
+    fn as_mut(&mut self) -> &mut Self {
+        self
+    }
+}
+
 impl Debug for Ram {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Ram")
@@ -383,6 +395,18 @@ impl From<&mut Ram> for RamState {
             halt: ram.halt,
             error: ram.error.clone(),
         }
+    }
+}
+
+impl AsRef<Self> for RamState {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
+impl AsMut<Self> for RamState {
+    fn as_mut(&mut self) -> &mut Self {
+        self
     }
 }
 
