@@ -36,7 +36,21 @@ impl InterpretError {
 
 impl std::fmt::Display for InterpretError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "InterpretError")
+        write!(f, "Interpret error at line {}: {:?}", self.line, self.kind)
+    }
+}
+
+impl std::fmt::Display for InterpretErrorKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InterpretErrorKind::SegmentationFault => write!(f, "Segmentation Fault"),
+            InterpretErrorKind::UnknownLabel => write!(f, "Unknown Label"),
+            InterpretErrorKind::InvalidInput(input) => write!(f, "Invalid input: {input}"),
+            InterpretErrorKind::InvalidLiteral => write!(f, "Invalid Literal"),
+            InterpretErrorKind::DivisionByZero => write!(f, "Division by Zero"),
+            InterpretErrorKind::IOError => write!(f, "IO Error"),
+            InterpretErrorKind::Halted => write!(f, "Halted"),
+        }
     }
 }
 

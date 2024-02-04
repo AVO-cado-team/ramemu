@@ -62,9 +62,34 @@ impl ParseErrorKind {
     }
 }
 
-impl std::fmt::Display for ParseError {
+impl std::fmt::Display for ParseErrorKind {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Parse error")
+        match self {
+            Self::LabelIsNotValid => write!(f, "Invalid Label"),
+            Self::UnsupportedSyntax => write!(f, "Unsupported Syntax"),
+            Self::UnsupportedOpcode(opcode) => write!(f, "Unsupported Opcode: {opcode}"),
+            Self::ArgumentIsRequired => write!(f, "Argument is required"),
+            Self::ArgumentIsNotValid(arg) => write!(f, "Argument is not valid: {arg}"),
+            UnknownError => todo!(),
+        }
+    }
+}
+
+impl std::fmt::Display for InvalidArgument {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::LabelIsNotValid => write!(f, "Invalid Label"),
+            Self::ArgumentIsRequired => write!(f, "Argument is required"),
+            Self::ArgumentValueMustBeNumberic => write!(f, "Argument must be numeric"),
+            Self::PureArgumentIsNotAllowed => write!(f, "Pure argument is not allowed"),
+            Self::ArgumentIsNotValid => write!(f, "Argument is not valid")
+        }
+    }
+}
+
+impl std::fmt::Display for ParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Parse error at line {}: {:?}", self.line, self.kind)
     }
 }
 
