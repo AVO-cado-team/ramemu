@@ -70,7 +70,7 @@ impl std::fmt::Display for ParseErrorKind {
             Self::UnsupportedOpcode(opcode) => write!(f, "Unsupported Opcode: {opcode}"),
             Self::ArgumentIsRequired => write!(f, "Argument is required"),
             Self::ArgumentIsNotValid(arg) => write!(f, "Argument is not valid: {arg}"),
-            UnknownError => todo!(),
+            Self::UnknownError => todo!(),
         }
     }
 }
@@ -82,7 +82,7 @@ impl std::fmt::Display for InvalidArgument {
             Self::ArgumentIsRequired => write!(f, "Argument is required"),
             Self::ArgumentValueMustBeNumberic => write!(f, "Argument must be numeric"),
             Self::PureArgumentIsNotAllowed => write!(f, "Pure argument is not allowed"),
-            Self::ArgumentIsNotValid => write!(f, "Argument is not valid")
+            Self::ArgumentIsNotValid => write!(f, "Argument is not valid"),
         }
     }
 }

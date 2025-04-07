@@ -209,8 +209,9 @@ fn parse_with_label_arg(
 }
 
 fn parse_label(source: &str) -> (Result<Option<&str>, ParseErrorKind>, &str) {
-    match source.split_once(':') {
-        Some((label, tail)) if is_valid_label(label) => (Ok(Some(label)), tail),
+    let (label, _) = source.split_once('#').unwrap_or((source, ""));
+    match label.split_once(':') {
+        Some((label, tail)) if is_valid_label(label) => (Ok(Some(label.trim())), tail),
         Some((_, tail)) => (Err(ParseErrorKind::LabelIsNotValid), tail),
         None => (Ok(None), source),
     }
@@ -341,5 +342,27 @@ mod tests {
             Some(Load(Value::Register(RegisterValue::Direct(1))))
         );
         assert_eq!(res.label, Some(*label_id));
+    }
+
+    #[test]
+    fn test_comment_with_colon() {
+        let mut label_ids = HashMap::default();
+        let line = "label: # Test: This is a comment";
+        let res = parse_line(line, &mut label_ids).unwrap();
+        let label_id = label_ids.get("label").unwrap();
+        assert_eq!(res.op, None);
+        assert_eq!(res.label, Some(*label_id));
+        assert_eq!(label_ids.len(), 1);
+        assert_eq!(label_ids["label"], *label_id);
+
+        let mut label_ids = HashMap::default();
+        let line = "LOAD 1 # Test: This is a comment";
+        let res = parse_line(line, &mut label_ids).unwrap();
+        assert_eq!(
+            res.op,
+            Some(Load(Value::Register(RegisterValue::Direct(1))))
+        );
+        assert_eq!(res.label, None);
+        assert_eq!(label_ids.len(), 0);
     }
 }
