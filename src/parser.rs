@@ -91,6 +91,7 @@ pub fn parse_line(
     source: &str,
     label_ids: &mut HashMap<String, LabelId>,
 ) -> Result<ParsedLine, ParseErrorKind> {
+    let (source, _) = source.split_once('#').unwrap_or((source, ""));
     let source = source.trim();
 
     let (source, label_id) = match parse_label(source) {
@@ -103,7 +104,7 @@ pub fn parse_line(
         (Err(_), _) => return Err(ParseErrorKind::LabelIsNotValid),
     };
 
-    let mut facts = source.split('#').next().unwrap_or("").split_whitespace();
+    let mut facts = source.split_whitespace();
 
     let facts = (facts.next(), facts.next(), facts.next());
 
@@ -321,6 +322,40 @@ mod tests {
     }
 
     #[test]
+    fn test_line_with_double_comment() {
+        let mut label_ids = HashMap::default();
+        let line = "## bla #";
+        let res = parse_line(line, &mut label_ids).unwrap();
+        assert_eq!(res.op, None);
+        assert_eq!(res.label, None);
+    }
+
+    #[test]
+    fn test_line_with_label_and_double_comment() {
+        let mut label_ids = HashMap::default();
+        let line = "label: ## bla #";
+        let res = parse_line(line, &mut label_ids).unwrap();
+        let label_id = label_ids.get("label").unwrap();
+        assert_eq!(res.op, None);
+        assert_eq!(res.label, Some(*label_id));
+        assert_eq!(label_ids.len(), 1);
+        assert_eq!(label_ids["label"], *label_id);
+    }
+
+    #[test]
+    fn test_line_with_opcode_and_double_comment() {
+        let mut label_ids = HashMap::default();
+        let line = "LOAD 1 ## bla #";
+        let res = parse_line(line, &mut label_ids).unwrap();
+        assert_eq!(
+            res.op,
+            Some(Load(Value::Register(RegisterValue::Direct(1))))
+        );
+        assert_eq!(res.label, None);
+        assert_eq!(label_ids.len(), 0);
+    }
+
+    #[test]
     fn test_parse_with_only_label() {
         let mut label_ids = HashMap::default();
         let line = "start:";
@@ -341,5 +376,30 @@ mod tests {
             Some(Load(Value::Register(RegisterValue::Direct(1))))
         );
         assert_eq!(res.label, Some(*label_id));
+    }
+
+    #[test]
+    fn test_comment_with_label_and_colon() {
+        let mut label_ids = HashMap::default();
+        let line = "label: # Test: This is a comment";
+        let res = parse_line(line, &mut label_ids).unwrap();
+        let label_id = label_ids.get("label").unwrap();
+        assert_eq!(res.op, None);
+        assert_eq!(res.label, Some(*label_id));
+        assert_eq!(label_ids.len(), 1);
+        assert_eq!(label_ids["label"], *label_id);
+    }
+
+    #[test]
+    fn test_comment_with_opcode_and_colon() {
+        let mut label_ids = HashMap::default();
+        let line = "LOAD 1 # Test: This is a comment";
+        let res = parse_line(line, &mut label_ids).unwrap();
+        assert_eq!(
+            res.op,
+            Some(Load(Value::Register(RegisterValue::Direct(1))))
+        );
+        assert_eq!(res.label, None);
+        assert_eq!(label_ids.len(), 0);
     }
 }
